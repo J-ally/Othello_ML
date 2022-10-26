@@ -40,15 +40,12 @@ def initialise_buttons () :
     initialise the buttons, and place them in an array named BUTTON_ARRAY
     """
     global BUTTON_ARRAY
-    count = 0
     for col in range (8) :
         for row in range (8) :
-            button_name = f"button{count}"
-            button_name = Button (root, text = " ", height = 3, width = 6, bg = "green",command = lambda : button_click(button_name))
-            count += 1
-            BUTTON_ARRAY [col][row] = button_name
-            logging.info(f"button {button_name} initialised")
-    logging.info("buttons initialised")
+            button = Button (root, text = " ", height = 3, width = 6, bg = "green",command = lambda m = f"[{col}][{row}]": where_click(m))
+            BUTTON_ARRAY [col][row] = button
+            logging.info(f"button {button} initialised")
+    logging.info("buttons initialised \n")
     pass
 
 def initialise_grid () :
@@ -56,10 +53,10 @@ def initialise_grid () :
     initialise the grid of buttons, based on the array BUTTON_ARRAY
     """
     global BUTTON_ARRAY
-    for col in range (8) :
-        for row in range (8) :
-            BUTTON_ARRAY [col][row].grid(row = col, column = row)
-    logging.info("grid initialised")
+    for row in range (8) :
+        for col in range (8) :
+            BUTTON_ARRAY [col][row].grid(row = row, column = col)
+    logging.info("grid initialised \n")
     pass
 
 def initialise_game () :
@@ -74,9 +71,17 @@ def initialise_game () :
     BUTTON_ARRAY [3][4].config(bg = "black")
     BUTTON_ARRAY [4][3].config(bg = "black")
     
-    logging.info("game initialised")
+    logging.info("game initialised \n")
     pass
 
+def where_click(m) :
+    """
+    find the button corresponding to the click of the player
+    Input : m (string) : the coordinates of the button
+    """
+    button_clicked = m_to_button(m)
+    button_click(button_clicked)
+    
 def button_click (button) :
     """
     the player play a turn (either white if TURN = "White" or black if TURN = "Black")
@@ -90,14 +95,14 @@ def button_click (button) :
         
     if button.cget("bg") == "green" and TURN == "White" : #White turn and tile unflipped yet
         button['bg'] = "White"
-        logging.info(f"player {TURN} clicked on a button at {button.grid_info().get('row')}, {button.grid_info().get('column')}, button named  {button.grid_info().get('in')}")
+        logging.info(f"player {TURN} clicked on a button at {button.grid_info().get('column')}, {button.grid_info().get('row')}")
         COUNT += 1
         TURN = "Black"
         check_end()
         
     elif button.cget("bg") == "green" and TURN == "Black": #black turn and tile unflipped yet
         button["bg"] = "Black"
-        logging.info(f"player {TURN} clicked on a button at {button.grid_info().get('row')}, {button.grid_info().get('column')}, button named  {button.grid_info().get('in')}")
+        logging.info(f"player {TURN} clicked on a button at {button.grid_info().get('column')}, {button.grid_info().get('row')}")
         COUNT += 1
         TURN = "White"
         check_end()
@@ -112,8 +117,24 @@ def check_end() :
         messagebox.showinfo("Game over", "The game is over")
         logging.info("game over")
         pass
-    print("checked win")
     pass
+###############################################################################
+#                            Utilities                                        #
+###############################################################################
+
+def m_to_button(m) :
+    """
+    convert the coordinates of a button into a tkinter object
+    Input : m (string) : the coordinates of the button
+    """
+    global BUTTON_ARRAY
+    
+    m = m.replace("[", "")
+    m = m.replace("]", "")
+    m = ( int(m[0]), int(m[1]) )
+    logging.info(f"button {BUTTON_ARRAY[m]} clicked")
+    
+    return BUTTON_ARRAY[m]
 
 ###############################################################################
 #                           Game script                                       #
