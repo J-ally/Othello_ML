@@ -32,7 +32,7 @@ COUNT = 0
 BUTTON_ARRAY = np.zeros((8,8), dtype=object)
 
 ###############################################################################
-#                               Game code                                     #
+#                         Game intitialisation                                #
 ###############################################################################
 
 def initialise_buttons () :
@@ -74,6 +74,61 @@ def initialise_game () :
     logging.info("game initialised \n")
     pass
 
+
+###############################################################################
+#                             Game Code                                       #
+###############################################################################
+
+def get_played_tiles_loc () :
+    """
+    returns a list of the localisation of the tiles that have been played already
+    """
+    global TURN, BUTTON_ARRAY, COUNT
+    
+    tiles_played = []
+    
+    for col in range (len(8)) :
+        for row in range (len(8)) :
+            if BUTTON_ARRAY[col][row].cget("bg") != "green" :
+                tiles_played.append( [(col,row)] )
+    logging.info(f"tiles played at turn {COUNT}: {tiles_played}")
+    return tiles_played
+    
+def all_possible_moves() :
+    """
+    find all the possible moves playable by both players
+    """
+    global BUTTON_ARRAY, TURN
+    tiles_played = get_played_tiles_loc()
+    
+    possible_moves_loc = []
+    if TURN == "White" :
+        for tile in tiles_played :
+            if BUTTON_ARRAY[tile[0]][tile[1]].cget("bg") == "White" :
+                ######
+                pass
+                
+    else :
+        for tile in tiles_played :
+            if BUTTON_ARRAY[tile[0]][tile[1]].cget("bg") == "Black" :
+                ######
+                pass
+                
+    pass
+
+def player_turn() :
+    """
+    player plays the game (places a tile)
+    """
+    
+    
+    
+    pass
+
+###############################################################################
+#                            Utilities                                        #
+###############################################################################
+
 def where_click(m) :
     """
     find the button corresponding to the click of the player
@@ -81,6 +136,7 @@ def where_click(m) :
     """
     button_clicked = m_to_button(m)
     button_click(button_clicked)
+    
     
 def button_click (button) :
     """
@@ -107,6 +163,7 @@ def button_click (button) :
         TURN = "White"
         check_end()
 
+
 def check_end() :
     """
     Check if the game is over
@@ -118,9 +175,7 @@ def check_end() :
         logging.info("game over")
         pass
     pass
-###############################################################################
-#                            Utilities                                        #
-###############################################################################
+
 
 def m_to_button(m) :
     """
