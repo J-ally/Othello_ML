@@ -118,7 +118,7 @@ def get_already_played_tiles_loc () :
     
     return tiles_played
 
-def get_empty_around_tile(tile) :
+def get_empty_around_tile_loc (tile) :
     """
     returns a list of the empty tiles around the tile given in argument
 
@@ -137,6 +137,7 @@ def get_empty_around_tile(tile) :
                     
     return empty_around_tile
 
+
 def get_game_border () :
     """
     gets the localisations of the tiles that are on the border of the tiles already played
@@ -149,7 +150,7 @@ def get_game_border () :
     game_tile_border = []
     
     for tile in tiles_played :
-        empty_tiles = get_empty_around_tile(tile)
+        empty_tiles = get_empty_around_tile_loc (tile)
         if empty_tiles != [] :
             game_tile_border.append(tile)    
     
@@ -187,6 +188,7 @@ def player_turn() :
     """
     player plays the game (places a tile)
     """
+    
     pass
 
 
@@ -284,6 +286,5 @@ initialise_game()
 
 #white player starts
 
-while COUNT < 64 :
-    button_click()
-    root.mainloop()
+#first turn
+root.mainloop()
