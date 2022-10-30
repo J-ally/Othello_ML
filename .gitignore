@@ -1,4 +1,4 @@
-logs_othello_backend.logs 
+logs_othello_backend.log
 .gitingore
 .gitattributes
 __pycache__ 
