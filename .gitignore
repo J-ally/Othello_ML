@@ -1,0 +1,5 @@
+logs_othello_backend.logs 
+.gitingore
+.gitattributes
+__pycache__ 
+.vscode
