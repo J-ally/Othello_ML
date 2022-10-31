@@ -17,12 +17,6 @@ logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend.log", 
                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 ###############################################################################
-#                              GLOBALS                                        #
-###############################################################################
-
-
-
-###############################################################################
 #                         GAME INITIALISATION                                #
 ###############################################################################
 
@@ -75,16 +69,16 @@ class Board () :
     
     def print_board (self) :
         """
-        print the board
+        print the board in the console
         Inputs : 
         Returns :
         """
-        print ("\n---------------------------------")
+        print ("| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | \n-------------------------------------")
         for i in range (self.size) :
             for j in range (self.size) :
                 print (f"| {self.board[i][j]} ", end = "" )
-            print ("|")
-            print ("---------------------------------")
+            print (f"| {i}")
+            print ("-------------------------------------")
             
         logging.info(f"turn {self.game_count} of {self.curr_player} board printed \n")
         pass
@@ -277,7 +271,7 @@ def play (board : Board) :
             logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
             pass
         
-        if board.game_count == board.size**2 :
+        if board.game_count == (board.size**2)-4 :
             flag = False
             print ("Game over !")
             logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
