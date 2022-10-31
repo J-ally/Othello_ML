@@ -12,7 +12,7 @@ import numpy as np
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
 
-logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend.log", filemode = "w",
+logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 ###############################################################################
@@ -100,27 +100,9 @@ class Board () :
         if 0 <= move[0] < self.size and 0 <= move[1] < self.size :
             return True
         return False
-
-    
-    def is_move_possible (self, move : tuple, player : str) :
-        """
-        check if a move is possible, depending on which player is playing
-        Inputs : move (tuple): the localisation of the tile to be played
-                 player (str): the player who is playing
-        Returns : True if the move is possible, False otherwise (tiles occupied or no tiles to flip)
-        """        
+   
         
-        if move in self.occupied_tiles :
-            return False
-        
-        elif self.tiles_to_flip (self, move, player) == [] :
-            return False
-        
-        else :
-            return True
-        
-        
-    def tiles_to_flip (self, move : tuple, player : str) :
+    def generate_tiles_to_be_flipped (self, move : tuple, player : str) :
         """
         check the tiles to be flip, depending on the move and the player
         Inputs : move (tuple): the localisation of the tile to be played
@@ -135,6 +117,8 @@ class Board () :
         tiles_to_be_fliped = []
         
         for direction in DIR_TOT : #for each direction
+            logging.debug(f"turn {self.game_count} of player {self.curr_player} : current direction {direction} ")
+            
             tiles_to_be_fliped_dir = []
             
             for i in range (1, self.size) :
@@ -154,8 +138,7 @@ class Board () :
                     elif self.board[new_move_loc] == player :
                         tiles_to_be_fliped.extend(tiles_to_be_fliped_dir)
                         
-                        logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile in final direction {direction} \
-                            from {move} added to the tiles to be flipped (current state : {tiles_to_be_fliped}")
+                        logging.debug(f"   turn {self.game_count} of player {self.curr_player} : tile in final direction {direction} from {move} added to the tiles to be flipped (current state : {tiles_to_be_fliped}")
                         break
                 else :
                     break
@@ -171,7 +154,7 @@ class Board () :
         self.board [move] = player
         self.occupied_tiles.append(move)
         
-        logging.info(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
+        logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
     
     def flip_tiles (self, move : tuple, player : str) :
@@ -179,8 +162,9 @@ class Board () :
         flips the tiles on the board
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
+        Returns : tiles_to_be_flipped (list) : the list of tiles to be flipped    
         """
-        tiles_to_be_fliped = self.tiles_to_flip (self, move, player)
+        tiles_to_be_fliped = self.generate_tiles_to_be_flipped (move, player)
         
         if tiles_to_be_fliped != [] :
             for tile in tiles_to_be_fliped :
@@ -192,9 +176,9 @@ class Board () :
             logging.debug(f"turn {self.game_count} of player {self.curr_player} : no tiles to be flipped ")
             pass
         
-        pass
+        return tiles_to_be_fliped
     
-    def all_possible_moves (self, player : str) :
+    def generate_all_possible_moves (self, player : str) :
         """
         returns the list of all possible moves for a given player
         Inputs : player (str): the player who is playing
@@ -204,12 +188,12 @@ class Board () :
         
         for i in range (self.size) :
             for j in range (self.size) :
-                if self.is_move_possible ((i,j), player) :
+                if self.generate_tiles_to_be_flipped((i,j), player) != [] :
                     possible_moves.append((i,j))
-        
+                    
+        logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
     
-
 
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
@@ -224,11 +208,19 @@ def play (board : Board) :
     flag = True
     
     while flag :
-        move = tuple(input ("Enter the coordinates of the tile you want to play (tuple format : (column index, row index)) : "))
+        board.print_board()
+        print(f"#### PLAYER {board.curr_player} TURN ! ####")
+        move = str(input ("Enter the coordinates of the tile you want to play (tuple format : (row_index,col_index)) : "))
+        move = (int(move[1]), int(move[3]))
+        logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
         
         if board.is_valid_loc (move) : #the move is possible (location wise)
+            logging.debug(f"turn {board.game_count} of player {board.curr_player} : move {move} is valid (location wise)")
             
-            if board.is_move_possible (move, board.curr_player) : #the move is possible (gameplay wise)
+            tiles_to_be_fliped = board.flip_tiles(move, board.curr_player)
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
+            
+            if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
                 
                 board.place_tile(move, board.curr_player)
                 logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} \n")
@@ -238,10 +230,15 @@ def play (board : Board) :
                     board.curr_player = "0"
                 else :
                     board.curr_player = "O"
-                    
+            
+            else :
+                print("This move is not possible, please try again")
+                logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
+                pass
+        
         else :
             print("This move is not possible, please try again")
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} ERROR : not possible \n")
+            logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
             pass
         
         if board.game_count == board.size**2 :
@@ -253,74 +250,6 @@ def play (board : Board) :
     pass
 
 
-    
-# def get_empty_around_tile_loc (tile) :
-#     """
-#     returns a list of the empty tiles around the tile given in argument
-
-#     Inputs : tile (tkinter object): the tile around which we want to find the empty tiles
-#     Returns : list of locations of the empty tiles around
-#     """
-#     global BUTTON_ARRAY, BOARD_SIZE
-    
-#     empty_around_tile = []
-    
-#     for col in range (tile[0]-1, tile[0]+2) :
-#         for row in range (tile[1]-1, tile[1]+2) :
-#             if (col >= 0 and col < BOARD_SIZE) and (row >= 0 and row < BOARD_SIZE) :
-#                 if BUTTON_ARRAY[col][row].cget("bg") == "green" :
-#                     empty_around_tile.append( (col,row) )
-                    
-#     return empty_around_tile
-
-
-# def get_game_border () :
-#     """
-#     gets the localisations of the tiles that are on the border of the tiles already played
-#     Inputs : 
-#     Returns : list of the localisation of the tile that are on the border of the game
-#     """
-#     global BUTTON_ARRAY, COUNT, PLAYER
-    
-#     tiles_played = get_already_played_tiles_loc ()
-#     game_tile_border = []
-    
-#     for tile in tiles_played :
-#         empty_tiles = get_empty_around_tile_loc (tile)
-#         if empty_tiles != [] :
-#             game_tile_border.append(tile)    
-    
-#     game_tile_border = list(dict.fromkeys(game_tile_border)) # remove duplicates
-    
-#     logging.info(f"turn {COUNT} of player {PLAYER} : game border tiles : {game_tile_border}")
-    
-#     return (game_tile_border)
-    
-
-# def all_possible_moves() :
-#     """
-#     find all the possible moves playable by both players
-#     """
-#     global BUTTON_ARRAY, PLAYER
-#     tiles_played = get_already_played_tiles_loc()
-    
-#     possible_moves_loc = []
-#     if PLAYER == "White" :
-#         for tile in tiles_played :
-#             if BUTTON_ARRAY[tile[0]][tile[1]].cget("bg") == "White" :
-#                 ######
-#                 pass
-                
-#     else :
-#         for tile in tiles_played :
-#             if BUTTON_ARRAY[tile[0]][tile[1]].cget("bg") == "Black" :
-#                 ######
-#                 pass
-                
-#     pass
-
-
-
 ###############################################################################
 #                           GAME SCRIPT                                      #
 ###############################################################################
@@ -328,7 +257,6 @@ def play (board : Board) :
 #initialise the game
 A = Board ()
 A.initialise_game()
-print(A)
 
-#white player starts
-B = Game (A)
+print(A.generate_all_possible_moves("O"))
+
