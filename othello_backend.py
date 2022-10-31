@@ -271,7 +271,7 @@ def play (board : Board) :
             logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
             pass
         
-        if board.game_count == (board.size**2)-4 :
+        if board.game_count == (board.size**2)-4 : #end of the game
             flag = False
             print ("Game over !")
             logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
