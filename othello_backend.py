@@ -6,6 +6,7 @@ Created on Sat Oct 29 2022
 
 import logging
 import numpy as np
+import copy
 
 
 ###############################################################################
@@ -145,6 +146,7 @@ class Board () :
                 
         return tiles_to_be_fliped
     
+    
     def place_tile (self, move : tuple, player : str) :
         """
         places the tiles on the board
@@ -156,6 +158,7 @@ class Board () :
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
+    
     
     def flip_tiles (self, move : tuple, player : str) :
         """
@@ -178,6 +181,7 @@ class Board () :
         
         return tiles_to_be_fliped
     
+    
     def generate_all_possible_moves (self, player : str) :
         """
         returns the list of all possible moves for a given player
@@ -194,6 +198,38 @@ class Board () :
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
     
+    
+    def generate_possible_boards (self, player : str) :
+        """
+        returns the list of all possible boards for a given player
+        Inputs : player (str): the player who is playing
+        Returns : the list of all possible boards (list of boards)
+        """
+        possible_boards = []
+        
+        for move in self.generate_all_possible_moves(player) :
+            possible_boards.append(self.generate_board_after_move(move, player))
+            
+        logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
+        return possible_boards
+    
+    
+    def generate_board_after_move (self, move : tuple, player : str) :
+        
+    
+        """
+        returns the board after a move has been played
+        Inputs : move (tuple): the localisation of the tile to be played
+                 player (str): the player who is playing
+        Returns : the board after the move has been played (Board)
+        """
+        new_board = copy.deepcopy(self)
+        
+        new_board.place_tile(move, player)
+        new_board.flip_tiles(move, player)
+        
+        logging.debug(f"turn {self.game_count} of player {self.curr_player} : board after move {move} generated : {new_board} ")
+        return new_board
 
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
@@ -258,5 +294,9 @@ def play (board : Board) :
 A = Board ()
 A.initialise_game()
 
-print(A.generate_all_possible_moves("O"))
+possibles = A.generate_possible_boards("O")
 
+for possible in possibles :
+    
+    possible.print_board()
+    print("\n")
