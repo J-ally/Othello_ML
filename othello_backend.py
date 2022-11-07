@@ -27,6 +27,7 @@ class Board () :
     0 represents a black tile
     """
     
+    #if everything goes well white is on pair indexes and black on unpair indexes
     occupied_tiles = []
     
     game_count = 1 #the number of turn played
@@ -60,29 +61,29 @@ class Board () :
         self.board [middle_1][middle_2] = "0"
         self.board [middle_2][middle_1] = "0"
         
-        self.occupied_tiles = [(middle_1,middle_1), (middle_2,middle_2), (middle_1,middle_2), (middle_2,middle_1)]
+        self.occupied_tiles = [(middle_1,middle_1), (middle_1,middle_2),(middle_2,middle_2), (middle_2,middle_1)]
         logging.debug(f"occupied tiles : {self.occupied_tiles} \n")
          
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
     
     
-    def print_board (self) :
+    def print_board (self, ecart : int = 0) :
         """
         print the board in the console
-        Inputs : 
+        Inputs : ecart (int) : the number of empty caracteres to print before the board
         Returns :
         """
-        print ("| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | \n-------------------------------------")
+        print (" "*ecart + "| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | \n" + " "*ecart + "-------------------------------------")
         for i in range (self.size) :
+            print(" "*ecart, end="")
             for j in range (self.size) :
                 print (f"| {self.board[i][j]} ", end = "" )
             print (f"| {i}")
-            print ("-------------------------------------")
+            print (" "*ecart + "-------------------------------------")
             
         logging.info(f"turn {self.game_count} of {self.curr_player} board printed \n")
         pass
-    
     
     def is_valid_loc (self, move : tuple) :
         """
@@ -93,7 +94,9 @@ class Board () :
         
         """
         if 0 <= move[0] < self.size and 0 <= move[1] < self.size :
+            logging.debug(f"turn {self.game_count} of player {self.curr_player} : move {move} is valid (location wise)")
             return True
+        logging.debug(f"turn {self.game_count} of player {self.curr_player} : move {move} is NOT valid (location wise)")
         return False
    
         
@@ -209,14 +212,13 @@ class Board () :
     
     
     def generate_board_after_move (self, move : tuple, player : str) :
-        
-    
         """
         returns the board after a move has been played
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
         Returns : the board after the move has been played (Board)
         """
+        
         new_board = copy.deepcopy(self)
         
         new_board.place_tile(move, player)
@@ -239,13 +241,15 @@ def play (board : Board) :
     
     while flag :
         board.print_board()
+        
         print(f"#### PLAYER {board.curr_player} TURN ! ####")
+        
         move = str(input ("Enter the coordinates of the tile you want to play (tuple format : (row_index,col_index)) : "))
         move = (int(move[1]), int(move[3]))
+        
         logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
         
         if board.is_valid_loc (move) : #the move is possible (location wise)
-            logging.debug(f"turn {board.game_count} of player {board.curr_player} : move {move} is valid (location wise)")
             
             tiles_to_be_fliped = board.flip_tiles(move, board.curr_player)
             logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
@@ -263,12 +267,12 @@ def play (board : Board) :
             
             else :
                 print("This move is not possible, please try again")
-                logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
                 pass
         
         else :
             print("This move is not possible, please try again")
-            logging.debug(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
             pass
         
         if board.game_count == (board.size**2)-4 : #end of the game
@@ -288,9 +292,25 @@ def play (board : Board) :
 A = Board ()
 A.initialise_game()
 
+#possible moves after for the first turn
 possibles = A.generate_possible_boards("O")
 
-for possible in possibles :
+print(A.print_board())
+for i in range (len(possibles)) :
+    possibles[i].print_board(4)
+    print("\n ")
     
-    possible.print_board()
+    #possible moves for the second turn
+    possibles_2 = possibles[i].generate_possible_boards("0")
+    for j in range (len(possibles_2)) :
+        possibles_2[j].print_board(8)
+        print("\n ")
+        
+        #possible moves for the third turn
+        possibles_3 = possibles_2[j].generate_possible_boards("O")
+        for k in range (len(possibles_3)) :
+            possibles_3[k].print_board(12)
+            print("\n ")
+        
     print("\n")
+        
