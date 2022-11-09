@@ -5,7 +5,18 @@ Created on Nov 09 2022
 @author:  jaly
 """
 
-from othello_backend import *
+import logging
+from random import randint
+
+###############################################################################
+#                          BACKEND GAME IMPORT                                #
+###############################################################################
+
+from othello_backend import Board
+
+###############################################################################
+#                               GAME SCRIPT                                   #
+###############################################################################
 
 def play_cvc_random (board : Board) :
     """

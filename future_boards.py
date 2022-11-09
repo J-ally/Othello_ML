@@ -4,7 +4,17 @@ Created on Nov 09 2022
 @author:  jaly
 """
 
-from othello_backend import *
+import logging
+
+###############################################################################
+#                          BACKEND GAME IMPORT                                #
+###############################################################################
+
+from othello_backend import Board
+
+###############################################################################
+#                               GAME SCRIPT                                   #
+###############################################################################
 
 def generate_all_possible_boards (board : Board, depth : int = 4) :
     """
