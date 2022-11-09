@@ -1,5 +1,6 @@
 logs_othello_backend.log
-.gitingore
+.gitignore
 .gitattributes
 __pycache__ 
 .vscode
+debug_party.txt
