@@ -9,12 +9,19 @@ import numpy as np
 import copy
 from random import randint
 
+###############################################################################
+#                         GAME FUNCTIONS IMPORT                               #
+###############################################################################
+
+from cvc_random import *
+from future_boards import *
+from pvp import *
 
 ###############################################################################
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
 
-logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend.log", filemode = "w",
+logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 ###############################################################################
@@ -205,6 +212,7 @@ class Board () :
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
     
+    
     def generate_board_after_move (self, move : tuple, player : str) :
         """
         returns the board after a move has been played
@@ -245,129 +253,6 @@ class Board () :
 #                             GAME FUNCTIONS                                  #
 ###############################################################################
 
-def play_pvp (board : Board) :
-    """
-    lets the player play against another player
-    Inputs : board (Board object): the board on which the game is played
-    Returns :
-    """
-    flag = True
-    
-    while flag :
-        board.print_board()
-        
-        print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
-        
-        move = str(input ("Enter the coordinates of the tile you want to play (tuple format : (row_index,col_index)) : "))
-        move = (int(move[1]), int(move[3]))
-        
-        logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
-        
-        if board.is_valid_loc (move) : #the move is possible (location wise)
-            
-            tiles_to_be_fliped = board.flip_tiles(move, board.curr_player)
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-            
-            if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                
-                board.place_tile(move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} \n")
-                
-                board.game_count += 1
-                if board.curr_player == "O" :
-                    board.curr_player = "0"
-                else :
-                    board.curr_player = "O"
-            
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
-                pass
-        
-        else :
-            print("This move is not possible, please try again")
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
-            pass
-        
-        if board.game_count == (board.size**2)-4 : #end of the game
-            flag = False
-            print ("Game over !")
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-            pass
-        
-    pass
-
-def play_cvc_random (board : Board) :
-    """
-    lets the compluter play against another computer (both using random moves)
-    Inputs : board (Board object): the board on which the game is played
-    Returns :
-    """
-    flag = True
-    
-    while flag :
-        board.print_board()
-        
-        print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
-        
-        move = board.generate_all_possible_moves(board.curr_player)
-        
-        if move == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
-            
-            board.game_count += 0
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            pass
-                
-            if board.game_count == (board.size**2) : #end of the game
-                flag = False
-                print ("Game over !")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                break
-        
-        else :
-            move = move[ randint(0, len(move)-1) ]   
-                
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
-            
-            if board.is_valid_loc (move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} \n")
-                    
-                    board.game_count += 1
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    print("This move is not possible, please try again")
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
-                    pass
-            
-            elif board.game_count == (board.size**2)-4 : #end of the game
-                flag = False
-                print ("Game over !")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                pass
-            
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
-                pass
-            
-    pass
-
-
 def calculate_score (board : Board) :
     """
     calculates the score of the game
@@ -386,19 +271,7 @@ def calculate_score (board : Board) :
                 score = (score[0]+1, score[1])
     logging.debug (f"score calculated : {score}")
     return score
-    
-def generate_all_possible_boards (board : Board, depth : int = 4) :
-    """
-    Generates all possible boards for a given board, for a given depth
-    
-    Args:board (Board): a board instance
-         depth (int, optional): the number of turns anticipated. Defaults to 4.
-    """
-    
-    boards_generated = []
-    
-    ############ to code ############
-    
+
 
 ###############################################################################
 #                           GAME SCRIPT                                      #
@@ -409,27 +282,4 @@ A = Board ()
 A.initialise_game()
 
 #possible moves after for the first turn
-
-# print(A.print_board())
-# for i in range (len(possibles)) :
-#     possibles[i].print_board(4)
-#     print("\n ")
-    
-#     #possible moves for the second turn
-#     possibles_2 = possibles[i].generate_possible_boards("0")
-#     for j in range (len(possibles_2)) :
-#         possibles_2[j].print_board(8)
-#         print("\n ")
-        
-#         #possible moves for the third turn
-#         possibles_3 = possibles_2[j].generate_possible_boards("O")
-#         for k in range (len(possibles_3)) :
-#             possibles_3[k].print_board(12)
-#             print("\n ")
-        
-#     print("\n")
-
 play_cvc_random(A)
-
-########## DOES NOT WORK (moves played are not valid) ##########
-
