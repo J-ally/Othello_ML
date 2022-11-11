@@ -27,7 +27,7 @@ class Board () :
     0 represents a black tile
     """
     
-    #if everything goes well white is on pair indexes and black on unpair indexes
+    previous_moves = {"O" : [], "0" : []}
     occupied_tiles = []
     
     game_count = 0 #the number of turn played
@@ -62,8 +62,11 @@ class Board () :
         self.board [middle_1][middle_2] = "0"
         self.board [middle_2][middle_1] = "0"
         
+        #move gestion
         self.occupied_tiles = [(middle_1,middle_1), (middle_1,middle_2),(middle_2,middle_2), (middle_2,middle_1)]
-         
+        self.previous_moves["O"] = [(middle_1,middle_1), (middle_2,middle_2)]
+        self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
+        
         self.game_count = 4
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
@@ -149,12 +152,13 @@ class Board () :
     
     def place_tile (self, move : tuple, player : str) :
         """
-        places the tiles on the board
+        places the tiles on the board, updates the occupied tiles and the moves played
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
         """
         self.board [move] = player
         self.occupied_tiles.append(move)
+        self.previous_moves[player].append(move)
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
