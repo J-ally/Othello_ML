@@ -243,6 +243,79 @@ class Board () :
             
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
+      
+    def evaluation_func (self):
+        """
+        Lets writh an evaluation function that use as critéaria :
+            -the mobility (blank case available)
+            -the position strengh (depending of positions on the board)
+            -the number of point
+        Giving score calculated with the 3 parameters above and weighted
+        by the importance of each evaluation criterion according to
+        the period in the game (beginning, middle and end)
+        !!! the way to weighted each value need to be rethinck 
+        """
+        
+        #Defining the strenth of the cases on the board
+        strength = np.zeros((8,8))
+        strength[0,] = strength[7,] = [500, -150, 30, 10, 10, 30, -150, 500]
+        strength[1,] = strength[6,] = [-150, -250, 0, 0, 0, 0, -250, -150]
+        strength[2,] = strength[5,] = [30, 0, 1, 2, 2, 1, 0, 30]
+        strength[3,] = strength[4,] = [10, 0, 2, 16, 16, 2, 0, 10]
+        
+        #Use the possible boards generated above as input for the evaluation function
+        if self.generate_possible_boards(self.curr_player)!= None:
+            possible_boards = self.generate_possible_boards(self.curr_player)
+            possible_board_evaluations = []
+            
+            #Creating a matrice containing different evaluation for each board possible :
+            #number of pawns, mobility, sum of the boxes arranged, evaluation function (the 3rd variables weighted)
+            possible_board_evaluations = np.zeros((len(possible_boards),4))
+            print(possible_board_evaluations)
+            for i in range(len(possible_boards)) :
+                
+                board_evaluated = possible_boards[i]
+                print(f"the possible board examined : {board_evaluated}")
+
+                #Counting points obtained after a move of the current player
+                possible_board_evaluations[(i, 0)] = np.sum(board_evaluated.board == self.curr_player)
+                
+                #Counting the mobility (empty cases avalaible on the board) after a move of the current player
+                possible_board_evaluations[(i, 1)] = np.sum(board_evaluated.board == " ")
+                
+                #initialisation of the counter of strengh value obtained (depending on cases occuped by the current player, see the matrice strengh above)
+                strength_value = 0
+
+                size = self.size
+
+                for row in range(size):
+                    for col in range(size):
+                        if board_evaluated.board[(row,col)] == self.curr_player:
+                            strength_value += strength[(row,col)] #sum of the strategic strength of all the player's pieces on the board
+                
+                possible_board_evaluations[(i, 2)] = strength_value
+                
+                
+                #give a score weighted by the importance of each evaluation criterion according to game period
+                
+                #The bifining period is during the first 12 rounds
+                #Score = 3 * mobility * 2 strenth * 1 * points
+                if self.game_count-4 >= 12 :
+                    for i in range(len(possible_board_evaluations[:, 0])):
+                        possible_board_evaluations[(i, 3)] = 3* possible_board_evaluations[(i, 1)] + 2* possible_board_evaluations[(i, 2)] + possible_board_evaluations[(i, 0)]
+                        
+                #the middle is between the 13th stroke and 60-deep exploration
+                #Score = 3 * mobility * 3 strenth * 1 * points
+                elif self.game_count-4 >= 60 : #!!!- nb exploration 
+                    for i in range(len(possible_board_evaluations[:, 0])):
+                        possible_board_evaluations[(i, 3)] = 3* possible_board_evaluations[(i, 1)] + 3* possible_board_evaluations[(i, 2)] + possible_board_evaluations[(i, 0)]
+                                                            
+                #For the end period we give more importance to the points
+                #Score = 1 * mobility * 2 strenth * 3 * points
+                else:
+                    possible_board_evaluations[(i, 3)] = 1* possible_board_evaluations[(i, 1)] + 2* possible_board_evaluations[(i, 2)] + 3*possible_board_evaluations[(i, 0)]
+        else :
+            possible_board_evaluations.append(self)      
     
 
 ###############################################################################
