@@ -28,7 +28,11 @@ class Board () :
     """
     
     previous_moves = {"O" : [], "0" : []}
+    board_history = []
+    
     occupied_tiles = []
+    
+    future_possible_boards = []
     
     game_count = 0 #the number of turn played
     
@@ -68,6 +72,9 @@ class Board () :
         self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
         
         self.game_count = 4
+        self.board_history.append(copy.deepcopy(self))
+        self.future_possible_boards = self.generate_possible_boards(self.curr_player)
+        
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
     
@@ -158,7 +165,6 @@ class Board () :
         """
         self.board [move] = player
         self.occupied_tiles.append(move)
-        self.previous_moves[player].append(move)
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
@@ -211,16 +217,39 @@ class Board () :
     
     def generate_board_after_move (self, move : tuple, player : str) :
         """
-        returns the board after a move has been played
+        returns the board after a move has been played, and updates the following attributesof the future board :
+            - occupied_tiles
+            - player 
+            - game_count
+            - board history 
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
         Returns : the board after the move has been played (Board)
         """
-        
+    
         new_board = copy.deepcopy(self)
-        
+        #play for the future board
         new_board.place_tile(move, player)
         new_board.flip_tiles(move, player)
+        
+        #updating the future board
+        new_board.board_history = self.board_history + [new_board]
+        
+        if self.curr_player == "0":
+            curr_player = self.curr_player
+            not_curr_player = "O"
+            new_board.previous_moves = {"O" :self.previous_moves[not_curr_player], "0" : self.previous_moves[curr_player] + [move]}
+        else :
+            curr_player = "O"
+            not_curr_player = self.curr_player
+            new_board.previous_moves = {"O" :self.previous_moves[curr_player] + [move], "0" : self.previous_moves[not_curr_player]}
+        
+        if self.curr_player == "0" : 
+            new_board.curr_player = "O"
+        else :
+            new_board.curr_player = "0"
+        
+        new_board.game_count = self.game_count + 1
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : board after move {move} generated : {new_board} ")
         return new_board
@@ -232,12 +261,14 @@ class Board () :
         Inputs : player (str): the player who is playing
         Returns : the list of all possible boards (list of boards)
         """
+
         possible_boards = []
         
         if self.generate_all_possible_moves(player) != None :
-        
             for move in self.generate_all_possible_moves(player) :
+                
                 possible_boards.append(self.generate_board_after_move(move, player))
+    
         else :
             possible_boards.append(self)
             
@@ -268,17 +299,23 @@ def calculate_score (board : Board) :
     logging.debug (f"score calculated : {score}")
     return score
 
-def generate_all_possible_boards (board : Board, depth : int = 4) :
+
+def generate_all_possible_boards (board : Board, final_depth : int = 2, local_depth : int = 0) :
     """
-    Generates all possible boards for a given board, for a given depth
+    Generates all possible boards for a given board, for a given depth using a tail recursion
     
     Args:board (Board): a board instance
-         depth (int, optional): the number of turns anticipated. Defaults to 4.
+         final_depth (int, optional): the number of turns anticipated. Defaults to 4.
+         local_depth (int, optional): the current depth of the recursion. Defaults to 0.
     """
     
-    boards_generated = []
-    
-    ############ to code ############
+    for j in range (len(board.future_possible_boards)) : #loop for the number of boards in the possible board list of the board
+        future_board = board.future_possible_boards[j]
+   
+        logging.debug(f"turn {board.game_count} of player {board.curr_player} : all possible boards generated for {future_board}, depth = {local_depth} : \n  ")
+        
+        while int(local_depth )< int(final_depth) :
+            generate_all_possible_boards(future_board, final_depth, local_depth +1)
     
 
 # print(A.print_board())
@@ -307,6 +344,7 @@ def generate_all_possible_boards (board : Board, depth : int = 4) :
 def play_cvc_random (board : Board) :
     """
     lets the compluter play against another computer (both using random moves)
+    Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
     Returns :
     """
@@ -336,8 +374,7 @@ def play_cvc_random (board : Board) :
                 break
         
         else :
-            move = move[ randint(0, len(move)-1) ]   
-                
+            move = move[ randint(0, len(move)-1) ]          
             logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
             
             if board.is_valid_loc (move) : #the move is possible (location wise)
@@ -377,6 +414,7 @@ def play_cvc_random (board : Board) :
 def play_pvp (board : Board) :
     """
     lets the player play against another player
+    Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
     Returns :
     """
@@ -451,7 +489,6 @@ def play_pvc_minmax (board : Board) :
 #                        GAME DECISION AGLGORITHMS                            #
 ###############################################################################
 
-# if needed
 
 
 ###############################################################################
@@ -462,5 +499,36 @@ def play_pvc_minmax (board : Board) :
 A = Board ()
 A.initialise_game()
 
-#possible moves after for the first turn
-play_cvc_random(A)
+# for i in range (len(A.future_possible_boards)) :
+#     A.future_possible_boards[i].print_board() #possible moves after for the first turn
+
+# print(f"le board history de A = {A.board_history}")
+# print(f"le previous move de A : {A.previous_moves}")
+
+# print(A.game_count)
+# for i in range (len(A.board_history)) :
+#     A.board_history[i].print_board()
+
+# B_list = A.generate_possible_boards( A.curr_player)
+# print(f"the list of possible boards : {B_list}")
+# B_list[0].print_board()
+
+# print(f"le board history est {B_list[0].board_history}")
+# print(f"le previous move est {B_list[0].previous_moves}")
+# print(f"la joueur jouant est {B_list[0].curr_player}")
+# print(f"le nombre de coups joués est {B_list[0].game_count}")
+
+
+# C_list = B_list[0].generate_possible_boards( B_list[0].curr_player)
+# print(f"the list of possible boards : {C_list}")
+# C_list[0].print_board()
+
+# print(f"le board history est {C_list[0].board_history}")
+# print(f"le previous move est {C_list[0].previous_moves}")
+# print(f"la joueur jouant est {C_list[0].curr_player}")
+# print(f"le nombre de coups joués est {C_list[0].game_count}")
+
+# print(f"le board history de A = {A.board_history}")
+# print(f"le previous move de A : {A.previous_moves}")
+
+generate_all_possible_boards(A, A.curr_player)
