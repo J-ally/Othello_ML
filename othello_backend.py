@@ -10,6 +10,11 @@ import copy
 import time
 from random import randint
 import matplotlib.pyplot as plt
+import math
+import sys
+
+
+sys.setrecursionlimit(1000000000)
 
 ###############################################################################
 #                          LOGGING DEFINITION                                 #
@@ -261,7 +266,7 @@ class Board () :
         return new_board
     
     
-    def generate_possible_boards (self, player : str, depth : int = 1, max_depth : int = 3) :
+    def generate_possible_boards (self, player, depth : int = 1, max_depth : int = 3) :
         """
         returns the list of all possible boards for a given player
         Inputs : player (str): the player who is playing
@@ -303,60 +308,81 @@ class Board () :
         strength[2,] = strength[5,] = [30, 0, 1, 2, 2, 1, 0, 30]
         strength[3,] = strength[4,] = [10, 0, 2, 16, 16, 2, 0, 10]
         
-        #Use the possible boards generated above as input for the evaluation function
-        if self.generate_possible_boards(self.curr_player)!= None:
-            possible_boards = self.generate_possible_boards(self.curr_player)
-            possible_board_evaluations = []
+        board_evaluated = self
+        print(f"the board examined : {board_evaluated}")
+
+        nb_points = np.sum(board_evaluated.board == self.curr_player)
+        mobility = np.sum(board_evaluated.board == " ")
+        
+        strength_value = 0
+        size = self.size
+        for row in range(size):
+            for col in range(size):
+                if board_evaluated.board[(row,col)] == self.curr_player:
+                           strength_value += strength[(row,col)]
+        value = 0
+        if board_evaluated.game_count-4 >= 12 :
+            value = 3* mobility + 2* strength_value + nb_points
+        elif board_evaluated.game_count-4 >= 60:
+            value = 3* mobility + 3* strength_value + nb_points
+        else:
+            value = mobility + 2* strength_value + 3* nb_points
             
-            #Creating a matrice containing different evaluation for each board possible :
-            #number of pawns, mobility, sum of the boxes arranged, evaluation function (the 3rd variables weighted)
-            possible_board_evaluations = np.zeros((len(possible_boards),4))
-            print(possible_board_evaluations)
-            for i in range(len(possible_boards)) :
-                
-                board_evaluated = possible_boards[i]
-                print(f"the possible board examined : {board_evaluated}")
-
-                #Counting points obtained after a move of the current player
-                possible_board_evaluations[(i, 0)] = np.sum(board_evaluated.board == self.curr_player)
-                
-                #Counting the mobility (empty cases avalaible on the board) after a move of the current player
-                possible_board_evaluations[(i, 1)] = np.sum(board_evaluated.board == " ")
-                
-                #initialisation of the counter of strengh value obtained (depending on cases occuped by the current player, see the matrice strengh above)
-                strength_value = 0
-
-                size = self.size
-
-                for row in range(size):
-                    for col in range(size):
-                        if board_evaluated.board[(row,col)] == self.curr_player:
-                            strength_value += strength[(row,col)] #sum of the strategic strength of all the player's pieces on the board
-                
-                possible_board_evaluations[(i, 2)] = strength_value
-                
-                
-                #give a score weighted by the importance of each evaluation criterion according to game period
-                
-                #The bifining period is during the first 12 rounds
-                #Score = 3 * mobility * 2 strenth * 1 * points
-                if self.game_count-4 >= 12 :
-                    for i in range(len(possible_board_evaluations[:, 0])):
-                        possible_board_evaluations[(i, 3)] = 3* possible_board_evaluations[(i, 1)] + 2* possible_board_evaluations[(i, 2)] + possible_board_evaluations[(i, 0)]
-                        
-                #the middle is between the 13th stroke and 60-deep exploration
-                #Score = 3 * mobility * 3 strenth * 1 * points
-                elif self.game_count-4 >= 60 : #!!!- nb exploration 
-                    for i in range(len(possible_board_evaluations[:, 0])):
-                        possible_board_evaluations[(i, 3)] = 3* possible_board_evaluations[(i, 1)] + 3* possible_board_evaluations[(i, 2)] + possible_board_evaluations[(i, 0)]
-                                                            
-                #For the end period we give more importance to the points
-                #Score = 1 * mobility * 2 strenth * 3 * points
-                else:
-                    possible_board_evaluations[(i, 3)] = 1* possible_board_evaluations[(i, 1)] + 2* possible_board_evaluations[(i, 2)] + 3*possible_board_evaluations[(i, 0)]
-        else :
-            possible_board_evaluations.append(self)      
+        return (value)
     
+    def alpha_beta(self, game_count_max, alpha, beta):
+        
+        print("this is the node",self)
+        
+        if self.game_count == game_count_max:
+            alpha = self.evaluation_func()
+            
+            print("alpha = ", alpha)
+            print("it's as leaf", self)
+            
+        else:
+            while self.game_count < game_count_max:
+                print("alpha = ", alpha)
+                print("it's not a leaf", self)
+                print("this the game count", self.game_count)
+                
+                nodes = self.generate_possible_boards(self.curr_player)
+                for node in nodes:
+                    
+                    beta = node.beta_alpha(game_count_max, alpha, beta)
+                    alpha = max(alpha, beta)
+                    
+                    if alpha >= beta:
+                        return alpha
+                        break
+        return alpha
+
+    def beta_alpha(self, game_count_max, alpha, beta):
+        
+        print("this is the node",self)
+        
+        if self.game_count == game_count_max:
+            beta = self.evaluation_func()
+            
+            print("beta = ", beta)
+            print("it's as leaf", self)
+            
+        else :
+            while self.game_count < game_count_max:
+                print("beta = ", beta)
+                print("it's not a leaf", self)
+                print("this the game count", self.game_count)
+                
+                nodes = self.generate_possible_boards(self.curr_player)
+                for node in nodes :
+                    alpha = node.alpha_beta(game_count_max, alpha, beta)
+                    beta = min(beta, alpha)
+                    
+                    if beta <= alpha:
+                        return beta
+                        break
+        return beta  
+                        
     
     def is_not_full (self) :
         """
@@ -412,9 +438,11 @@ def play_cvc_random (board : Board) :
     
     while board.is_not_full() :
         
-        # print(board.is_not_full(), count_no_possible_moves)
-        # board.print_board()
-        # print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
+        #print(board.is_not_full(), count_no_possible_moves)
+        #board.print_board()
+        #print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
+        
+        #print("evaluation : ", board.evaluation_func())
         
         moves = board.generate_all_possible_moves(board.curr_player)
         logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
@@ -570,5 +598,13 @@ def play_pvc_minmax (board : Board) :
 # plt.xlabel("game")
 # plt.show()
 
+A = Board()
+#play_cvc_random(A)
 
+depth_max = 8
+
+game_count_max = A.game_count + depth_max
+alpha = -math.inf
+beta = math.inf
+A.beta_alpha(game_count_max, alpha, beta)
 
