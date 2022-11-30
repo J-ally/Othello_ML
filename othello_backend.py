@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 29 2022
-@author:  jaly, delpierot
+@author:  jaly, delpierot, judith
 """
 
 import logging
 import numpy as np
-import copy
 import time
 from random import randint
 import matplotlib.pyplot as plt
@@ -34,10 +33,6 @@ class Board () :
     """
     
     previous_moves = {"O" : [], "0" : []}
-    board_history = []
-    
-    occupied_tiles = []
-    
     future_possible_boards = []
     
     game_count = 0 #the number of turn played
@@ -55,8 +50,6 @@ class Board () :
         self.board [:] = " "
         
         self.initialise_game()
-        self.future_possible_boards = self.generate_possible_boards(self.curr_player)
-        self.board_history.append(copy.deepcopy(self))
         
         logging.info(f"the size of the of the game : {self.size} \n")
         pass
@@ -77,10 +70,10 @@ class Board () :
         self.board [middle_2][middle_1] = "0"
         
         #move gestion
-        self.occupied_tiles = [(middle_1,middle_1), (middle_1,middle_2),(middle_2,middle_2), (middle_2,middle_1)]
         self.previous_moves["O"] = [(middle_1,middle_1), (middle_2,middle_2)]
         self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
         
+        #board history gestion
         self.game_count = 5
         
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
@@ -104,6 +97,26 @@ class Board () :
             
         logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
         pass
+    
+
+    def __deepcopy__(self):
+        """
+        Replace the deepcopy method to avoid the extra calculation of deepcopy 
+
+        Returns : new_board (Board): a new board with the same attributes as the current board
+        """
+        new_board = Board()
+        
+        #for boards gestion
+        new_board.board = self.board
+        new_board.future_possible_boards = self.future_possible_boards
+        
+        #for game gestion
+        new_board.previous_moves = self.previous_moves
+        new_board.game_count = self.game_count
+        new_board.curr_player = self.curr_player
+        
+        return new_board
     
     
     def is_valid_loc (self, move : tuple) :
@@ -171,7 +184,6 @@ class Board () :
                  player (str): the player who is playing
         """
         self.board [move] = player
-        self.occupied_tiles.append(move)
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
@@ -234,13 +246,12 @@ class Board () :
         Returns : the board after the move has been played (Board)
         """
     
-        new_board = copy.deepcopy(self)
+        new_board = self.__deepcopy__()
         #play for the future board
         new_board.flip_tiles(move, player)
         new_board.place_tile(move, player)
         
         #updating the future board
-        new_board.board_history = self.board_history + [new_board]
         new_board.game_count = self.game_count + 1
         
         if self.curr_player == "0":
@@ -370,7 +381,6 @@ class Board () :
         else :
             return True
         
-    
 
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
@@ -552,23 +562,71 @@ def play_pvc_minmax (board : Board) :
 #                        GAME DECISION AGLGORITHMS                            #
 ###############################################################################
 
+class MCTS (Board) :
+    def __init__ (self, board : Board) :
+        pass
+    
+    # main function for the Monte Carlo Tree Search
+    # def monte_carlo_tree_search(root):
+        
+    #     while resources_left(time, computational power):
+    #         leaf = traverse(root)
+    #         simulation_result = rollout(leaf)
+    #         backpropagate(leaf, simulation_result)
+            
+    #     return best_child(root)
+
+    # # function for node traversal
+    # def traverse(node):
+    #     while fully_expanded(node):
+    #         node = best_uct(node)
+            
+    #     # in case no children are present / node is terminal
+    #     return pick_unvisited(node.children) or node
+
+    # # function for the result of the simulation
+    # def rollout(node):
+    #     while non_terminal(node):
+    #         node = rollout_policy(node)
+    #     return result(node)
+
+    # # function for randomly selecting a child node
+    # def rollout_policy(node):
+    #     return pick_random(node.children)
+
+    # # function for backpropagation
+    # def backpropagate(node, result):
+    #     if is_root(node) return
+    #     node.stats = update_stats(node, result)
+    #     backpropagate(node.parent)
+
+    # # function for selecting the best child
+    # # node with highest number of visits
+    # def best_child(node):
+    #     pick child with highest number of visits
+
+
+    
+
 ###############################################################################
 #                           GAME SCRIPT                                      #
 ###############################################################################
 
 # scores = []
-# for i in range (20) :
+# for i in range (200) :
 #     A = Board ()   
 #     scores.append(play_cvc_random(A))
 # print(scores)
 
-# times = [a[2] for a in scores]
+# times = []
+# for i in range (len(scores)) :
+#     try :
+#         times.append(scores[i][2])
+#     except :
+#         pass
 
-# plt.plot(np.arange(20), times)
+# plt.plot(np.arange(200), times)
 # plt.axhline(np.mean(times), color = "red")
 # plt.ylabel("time (ms)")
 # plt.xlabel("game")
 # plt.show()
-
-
-
