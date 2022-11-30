@@ -405,6 +405,28 @@ def calculate_score (board : Board) :
     logging.debug (f"score calculated : {score}")
     return score
 
+def evaluation_function(board : Board, AI_score : int, AI_player : str):
+    """
+    Evaluate the board for the player AI
+    Inputs : board (Board object): the board on which the game is played
+    Outputs : Value of the board for the current player
+    """    
+    evaluation_matrix =  np.zeros((board.size,board.size), dtype= int)
+    
+    evaluation_matrix[0,] = evaluation_matrix[7,] = [500, -150, 30, 10, 10, 30, -150, 500]
+    evaluation_matrix[1,] = evaluation_matrix[6,] = [-150, -250, 0, 0, 0, 0, -250, -150]
+    evaluation_matrix[2,] = evaluation_matrix[5,] = [30, 0, 1, 2, 2, 1, 0, 30]
+    evaluation_matrix[3,] = evaluation_matrix[4,] = [10, 0, 2, 16, 16, 2, 0, 10] 
+    
+    if board.game_count <= (board.size**2-4)/3:
+        value_of_the_board = np.sum(evaluation_matrix[board.board == AI_player]) - AI_score
+        #print(f"{np.sum(evaluation_matrix[board.board == '0'])}-{AI_score} = {value_of_the_board}")
+    else:
+        value_of_the_board = np.sum(evaluation_matrix[board.board == AI_player]) + AI_score
+        #print(f"{np.sum(evaluation_matrix[board.board == '0'])}+{AI_score} = {value_of_the_board}")
+        pass
+    return value_of_the_board
+
 
 ###############################################################################
 #                               GAME MODES                                    #
@@ -547,20 +569,274 @@ def play_pvp (board : Board) :
     pass
 
 
-def play_pvc_minmax (board : Board) :
+def play_cvc_MinMax (board : Board, depth_exploration : int) :
     """
-    lets a player play against  computer (using minmax algorithm)
+    lets the compluter play against another computer (one using random moves, one using AI)
+    Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
-    Returns :
-
-    Args:
-        board (Board): _description_
+            depth_exploration (int): the depth the AI explores the game to play
+    Returns : board (Board object), score , final_time_ms
     """
+    start = time.time()
+    count_no_possible_moves = 0
+    AI_MinMax_player = ['0', 'O'][randint(0,1)]
+    print(f'AI plays : {AI_MinMax_player}')
+    
+    while board.is_not_full() :
+        
+        # print(board.is_not_full(), count_no_possible_moves)
+        board.print_board()
+        # print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
+        
+        moves = board.generate_all_possible_moves(board.curr_player)
+        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
+        
+        if moves == None : #no possible moves for the player
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
+            
+            count_no_possible_moves += 1
+            board.game_count += 0
+            if board.curr_player == "O" :
+                board.curr_player = "0"
+            else :
+                board.curr_player = "O"
+            
+            if count_no_possible_moves > 3 : #to prevent infinite loop
+                score = calculate_score(board)
+                if AI_MinMax_player == '0':
+                    print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+                else:
+                    print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+                return (board, score)
+            
+        else :
+            if board.curr_player != AI_MinMax_player: #Random is playing
+                current_move = moves [ randint(0, len(moves)-1) ] 
+                logging.info(f"turn {board.game_count} of random player {board.curr_player} : move {current_move} entered")
+            
+            else: #The minmax AI is playing
+                board.print_board()
+                current_move = MinMax(board.__deepcopy__(), depth_exploration)
+                logging.info(f"turn {board.game_count} of AI minmax player {board.curr_player} : move {current_move} entered")
+            
+            if board.is_valid_loc (current_move) : #the move is possible (location wise)
+                
+                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
+                
+                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
+                    
+                    board.place_tile(current_move, board.curr_player)
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
+                    
+                    board.game_count += 1
+                    if board.curr_player == "O" :
+                        board.curr_player = "0"
+                    else :
+                        board.curr_player = "O"
+                
+                else :
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
+                    pass
+                
+                print(current_move)
+                
+            else :
+                print("This move is not possible, please try again")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
+                pass
+    
+    score = calculate_score(board)
+    if AI_MinMax_player == '0':
+        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+    else:
+        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+    # board.print_board()
+    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+    end = time.time()
+    final_time_ms = round((end-start) * 10**3)
+    return (board, score, final_time_ms)
 
 
 ###############################################################################
 #                        GAME DECISION AGLGORITHMS                            #
 ###############################################################################
+
+############# MINMAX #############
+
+def leaf_evaluation(possible_boards : list, depth : int, AI_player : str):
+    """
+    Calculates the value of a list of positions: 
+    The maximum for the AI, the minimum for the adverse of the AI
+    Inputs : A list of boards to be evaluated  (possible_boards)
+                and the depth_exploration (depth)
+    Returns : The extremal value of the position (node_value : int) 
+    """
+    
+    value_leaf = []
+    
+    for leaf in possible_boards:
+        white_score, black_score = calculate_score(leaf)
+        AI_score = black_score if AI_player == '0' else white_score
+        value_leaf.append(evaluation_function(leaf, AI_score, AI_player))
+    node_value = max(value_leaf) if depth%2 == 0 else min(value_leaf)
+    
+    """if depth%2 == 0:
+        print('MAX')
+    else:
+        print('MIN')"""
+        
+    return node_value
+
+
+
+def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player):
+    """
+    Calculates the value of one move by recursion for the AI with the MinMax algorithm.
+    Inputs :  - historic_boards : list of boards    (list of previous nodes in the tree)
+              - possible_moves : list of tuple      (next moves possible from the last node of historic_boards)
+              - possible_boards : list of boards    (next boards possible from the last node of historic_boards)
+              - depth : int                         (current depth of the nodes of possible_boards)
+              - depth_exploration : int             (choosen depth to explore each time AI plays)
+              - node_value : list of int            (list of the value of the node explored)
+              - to_explore : list of int            (list of the number of nodes to explore for each depth of the currant branch)
+              - AI_player : str                     (color of the AI)
+    Returns : The value of the possibles moves (node_value : list)
+                and the possibles moves in the same order (next_possible_moves : list)
+    """
+    Adverse_player = '0' if AI_player == 'O' else 'O'
+    
+    if depth <= 1 :
+        return node_value
+    
+    else:
+        
+        if to_explore[depth] >= 0:
+        #Descendant case : the nodes of the current depth are not all explored 
+            
+            if depth < depth_exploration and possible_moves != None:
+            #The next nodes are not leaves, then they are to be explored
+            #Then generate the next noes to be evaluated
+                #print('\npm : ' , possible_moves)
+                #print('Non explore avant', depth, to_explore[depth], historic_boards, node_value)
+                player = AI_player if depth%2 == 0 else Adverse_player
+                #print( 'NEXT PLAYER :', player)
+                #print('depth :', depth, 'TO_EXPLORE list :', to_explore, 'len(pb) :', len(possible_boards))
+                #print(possible_boards)
+                sub_board = possible_boards[to_explore[depth]]
+                historic_boards.append(sub_board.__deepcopy__())
+                #sub_board.print_board()
+                possible_boards = sub_board.generate_possible_boards(player)
+                possible_moves = sub_board.generate_all_possible_moves(player)
+                to_explore.append(len(possible_boards)-1)
+                #print('TO_EXPLORE list :', to_explore)
+                depth += 1
+                #print('Non explore apres', depth, to_explore[depth-1], sub_board, historic_boards, node_value)
+                return recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player)
+            
+            elif depth < depth_exploration and possible_moves == None:
+            #The next nodes are not leaves, but no move possible for the player
+            #Go to the next depth
+                historic_boards.extend(possible_boards)
+                to_explore.append(len(possible_boards)-1)
+                depth += 1
+                return recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player)
+            
+            else:
+            #The next nodes are leaves
+            #Then calculates the value of the node
+            #Then go back to explore the previous depth
+                #depth == depth_exploration or possible_moves == None:
+                #print('\npm : ', possible_moves)
+                #print('Feuille avant',depth, to_explore[depth-1], historic_boards, node_value)
+                node_value.append(leaf_evaluation(possible_boards, depth, AI_player))           
+                depth -= 2
+                to_explore[depth+1] -= 1
+                player = AI_player if depth%2 == 0 else Adverse_player
+                #print(historic_boards[depth])
+                possible_boards = historic_boards[depth].generate_possible_boards(player)
+                possible_moves = historic_boards[depth].generate_all_possible_moves(player)
+                historic_boards = historic_boards[:depth+1]
+                to_explore = to_explore[:depth+2]
+                #print('TO_EXPLORE list :', to_explore)
+                #print('Feuille apres', depth, to_explore[depth], historic_boards, node_value, '\n')
+                #print('\nNEXT PB', possible_boards)
+                depth += 1
+                return recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player)
+        
+        
+        else : 
+        #Ascendant case : the nodes of the current depth are all explored 
+        #Then calculates the value of the node
+        #Then go back to explore the previous depth
+            #if to_explore[depth] < 0:
+            #print('\nTo explore avant', depth, to_explore[depth], historic_boards, node_value)
+            node_value = [max(node_value)] if depth%2 == 0 else [min(node_value)]
+            depth -= 2
+            to_explore[depth+1] -= 1
+            player = AI_player if depth%2 == 0 else Adverse_player
+            #print(historic_boards[depth])
+            #historic_boards[depth].print_board()
+            possible_boards = historic_boards[depth].generate_possible_boards(player)
+            possible_moves = historic_boards[depth].generate_all_possible_moves(player)
+            historic_boards = historic_boards[:depth+1] 
+            to_explore = to_explore[:depth+2]
+            #print('To explore apres', depth, to_explore[depth], historic_boards, node_value)
+            depth += 1
+            return recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player)
+
+
+
+def MinMax(board : Board, depth_exploration : int):
+    """
+    Calculates the value of the next possible moves for the AI with the MinMax algorithm.
+    Inputs : The current game board 
+                and the depth of exploration
+    Returns : The move of maximum value for AI for the next turn (move_of_max_value : tuple)
+    """
+    print('# --------- #\nMinMax')
+    AI_player = board.curr_player
+    Adverse_player = '0' if AI_player == 'O' else 'O'
+    
+    depth = 0
+    player = AI_player if depth%2 == 0 else Adverse_player
+    next_possible_moves = board.generate_all_possible_moves(player)
+    board.print_board()
+    possible_moves = next_possible_moves.copy() if next_possible_moves != None else None
+    
+    board_copy = board.__deepcopy__()    
+    possible_boards_depth1 = board_copy.generate_possible_boards(player)
+    board.print_board()
+
+    node_value = [[] for index_sub_board in range(len(next_possible_moves))]
+    #print(possible_moves)
+    
+    for index_sub_board in range(len(next_possible_moves)):
+        
+        depth = 1
+        historic_boards = [board]
+        to_explore = [1,1]
+        print(f'\n\n##########Move {index_sub_board}############\n---------{next_possible_moves[index_sub_board]}---------')
+        possible_boards_depth1[index_sub_board].print_board()
+        historic_boards.append(possible_boards_depth1[index_sub_board])
+        player = AI_player if depth%2 == 0 else Adverse_player
+        #print(f"PLAYER : {player}")
+        possible_boards = possible_boards_depth1[index_sub_board].generate_possible_boards(player)
+        possible_moves = possible_boards_depth1[index_sub_board].generate_all_possible_moves(player)
+        to_explore.append(len(possible_boards)-1)
+        depth = 2
+        
+        node_val = recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value[index_sub_board], to_explore, AI_player)
+        node_value[index_sub_board] = node_val[0]
+        
+    move_of_max_value = next_possible_moves[np.argmax(node_value)] #Can be empty if no possible move
+        
+    return move_of_max_value
+
+
+
+############# MCTS #############
 
 class MCTS (Board) :
     def __init__ (self, board : Board) :
@@ -630,3 +906,7 @@ class MCTS (Board) :
 # plt.ylabel("time (ms)")
 # plt.xlabel("game")
 # plt.show()
+
+A = Board ()
+A.initialise_game()
+a = play_cvc_MinMax(A, 2)
