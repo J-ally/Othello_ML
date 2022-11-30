@@ -4,22 +4,25 @@ Created on Sat Oct 29 2022
 @author:  jaly, delpierot, judith
 """
 
-import logging
-import numpy as np
-import time
-from random import randint
 import matplotlib.pyplot as plt
+import numpy as np
+import logging
+import time
+import math
+
+from random import randint
+
 
 ###############################################################################
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
+
 logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend_debug.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 
 logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend_info.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
-
 
 ###############################################################################
 #                         GAME INITIALISATION                                #
@@ -382,6 +385,109 @@ class Board () :
             return True
         
 
+    def alpha_value (self, depth, depth_max, alpha, beta):
+        """
+        to be documented
+
+        Args:
+            depth (_type_): _description_
+            depth_max (_type_): _description_
+            alpha (_type_): _description_
+            beta (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if depth == depth_max:
+            alpha = self.evaluation_func()
+            return alpha
+        else:
+            pass
+        
+        alpha = -math.inf
+        
+        if depth < depth_max:
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                print("depth :", depth)
+                beta = node.beta_value(depth, depth_max, alpha, beta)
+                alpha = max(alpha, beta)
+        else:
+            pass
+        
+        return alpha
+
+
+    def beta_value (self, depth, depth_max, alpha, beta):
+        """
+        To be documented
+
+        Args:
+            depth (_type_): _description_
+            depth_max (_type_): _description_
+            alpha (_type_): _description_
+            beta (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if depth == depth_max:
+            beta = self.evaluation_func()
+            return beta
+        else:
+            pass
+        
+        beta = math.inf
+        
+        if depth < depth_max:
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                print("depth :", depth)
+                alpha = node.alpha_value(depth, depth_max, alpha, beta)
+                beta = min(beta, alpha)
+        else:
+            pass
+        
+        return beta
+
+    def alpha_beta(self, depth_max):
+        """
+        To be documented
+
+        Args:
+            depth_max (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        
+        alpha = -math.inf
+        beta = math.inf
+        best_val = alpha
+        
+        best_node = None
+        best_move = None
+        
+        depth = 0
+        if depth <= depth_max:
+            depth += 1
+            nodes = self.generate_possible_boards(self.curr_player)
+            moves = self.generate_all_possible_moves(self.curr_player)
+            for node in nodes:
+                
+                value = node.alpha_value(depth, depth_max, alpha, beta)
+                if value >= best_val:
+                    best_val = value
+                    best_node = node
+                    best_move = moves[nodes.index(best_node)]
+        else:
+            pass
+        
+        return best_node, best_move
+
+# A = Board()
+# depth_max = 10
+# print(A.alpha_beta(depth_max))
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
 ###############################################################################
