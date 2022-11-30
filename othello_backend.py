@@ -330,58 +330,64 @@ class Board () :
             
         return (value)
     
-    def alpha_beta(self, game_count_max, alpha, beta):
+    def alpha_beta(self, game_count_max):
         
-        print("this is the node",self)
+        best_move = None
+        moves = None
+        alpha = -math.inf
         
-        if self.game_count == game_count_max:
-            alpha = self.evaluation_func()
+        if self.game_count <= 64:
             
-            print("alpha = ", alpha)
-            print("it's as leaf", self)
-            
+            if self.game_count == game_count_max:
+                alpha = self.evaluation_func()
+                
+            else:
+                while self.game_count < game_count_max:
+                    
+                    nodes = self.generate_possible_boards(self.curr_player)
+                    moves = self.generate_all_possible_moves(self.curr_player)
+                    
+                    for node in nodes:
+                        
+                        beta = node.beta_alpha(game_count_max)[0]
+                        alpha = max(alpha, beta)
+                        
+                        if alpha >= beta:
+                            ind = nodes.index(node)
+                            best_move = moves[ind]
+                            return alpha, moves, best_move
         else:
-            while self.game_count < game_count_max:
-                print("alpha = ", alpha)
-                print("it's not a leaf", self)
-                print("this the game count", self.game_count)
-                
-                nodes = self.generate_possible_boards(self.curr_player)
-                for node in nodes:
-                    
-                    beta = node.beta_alpha(game_count_max, alpha, beta)
-                    alpha = max(alpha, beta)
-                    
-                    if alpha >= beta:
-                        return alpha
-                        break
-        return alpha
+            pass
+        return alpha, moves, best_move
 
-    def beta_alpha(self, game_count_max, alpha, beta):
+    def beta_alpha(self, game_count_max):
         
-        print("this is the node",self)
+        best_move = None
+        moves = None
+        beta = math.inf
         
-        if self.game_count == game_count_max:
-            beta = self.evaluation_func()
+        if self.game_count <= 64:
             
-            print("beta = ", beta)
-            print("it's as leaf", self)
-            
-        else :
-            while self.game_count < game_count_max:
-                print("beta = ", beta)
-                print("it's not a leaf", self)
-                print("this the game count", self.game_count)
+            if self.game_count == game_count_max:
+                beta = self.evaluation_func()
                 
-                nodes = self.generate_possible_boards(self.curr_player)
-                for node in nodes :
-                    alpha = node.alpha_beta(game_count_max, alpha, beta)
-                    beta = min(beta, alpha)
+            else :
+                while self.game_count < game_count_max:
                     
-                    if beta <= alpha:
-                        return beta
-                        break
-        return beta  
+                    nodes = self.generate_possible_boards(self.curr_player)
+                    moves = self.generate_all_possible_moves(self.curr_player)
+                    
+                    for node in nodes :
+                        alpha = node.alpha_beta(game_count_max)[0]
+                        beta = min(beta, alpha)
+                        
+                        if beta <= alpha:
+                            ind = nodes.index(node)
+                            best_move = moves[ind]
+                            return beta, moves, best_move
+        else:
+            pass
+        return beta, moves, best_move
                         
     
     def is_not_full (self) :
@@ -443,6 +449,13 @@ def play_cvc_random (board : Board) :
         #print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
         
         #print("evaluation : ", board.evaluation_func())
+        
+        depth_max = 3
+
+        game_count_max = board.game_count + depth_max
+        alpha = -math.inf
+        beta = math.inf
+        board.beta_alpha(game_count_max, alpha, beta)
         
         moves = board.generate_all_possible_moves(board.curr_player)
         logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
@@ -599,12 +612,9 @@ def play_pvc_minmax (board : Board) :
 # plt.show()
 
 A = Board()
-#play_cvc_random(A)
+# play_cvc_random(A)
 
-depth_max = 8
-
+depth_max = 60
 game_count_max = A.game_count + depth_max
-alpha = -math.inf
-beta = math.inf
-A.beta_alpha(game_count_max, alpha, beta)
+print(A.beta_alpha(game_count_max))
 
