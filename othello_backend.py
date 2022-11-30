@@ -7,6 +7,7 @@ Created on Sat Oct 29 2022
 import logging
 import numpy as np
 import time
+import copy
 from random import randint
 import matplotlib.pyplot as plt
 
@@ -34,6 +35,8 @@ class Board () :
     
     previous_moves = {"O" : [], "0" : []}
     future_possible_boards = []
+    
+    board_history = []
     
     game_count = 0 #the number of turn played
     
@@ -75,6 +78,7 @@ class Board () :
         
         #board history gestion
         self.game_count = 5
+        self.board_history.append(copy.deepcopy(self))
         
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
@@ -99,12 +103,12 @@ class Board () :
         pass
     
 
-    def __deepcopy__(self):
+    #def __deepcopy__(self, memo):
         """
         Replace the deepcopy method to avoid the extra calculation of deepcopy 
 
         Returns : new_board (Board): a new board with the same attributes as the current board
-        """
+        """ """
         new_board = Board()
         
         #for boards gestion
@@ -116,7 +120,7 @@ class Board () :
         new_board.game_count = self.game_count
         new_board.curr_player = self.curr_player
         
-        return new_board
+        return Board(copy.deepcopy(self))"""
     
     
     def is_valid_loc (self, move : tuple) :
@@ -236,23 +240,23 @@ class Board () :
     
     def generate_board_after_move (self, move : tuple, player : str) :
         """
-        returns the board after a move has been played, and updates the following attributes of the future board :
+        returns the board after a move has been played, and updates the following attributesof the future board :
+            - occupied_tiles
             - player 
             - game_count
             - board history 
-            
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
         Returns : the board after the move has been played (Board)
         """
     
-        new_board = self.__deepcopy__()
+        new_board = copy.deepcopy(self)
         #play for the future board
-        new_board.flip_tiles(move, player)
         new_board.place_tile(move, player)
+        new_board.flip_tiles(move, player)
         
         #updating the future board
-        new_board.game_count = self.game_count + 1
+        new_board.board_history = self.board_history + [new_board]
         
         if self.curr_player == "0":
             curr_player = self.curr_player
@@ -267,6 +271,8 @@ class Board () :
             new_board.curr_player = "O"
         else :
             new_board.curr_player = "0"
+        
+        new_board.game_count = self.game_count + 1
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : board after move {move} generated : {new_board} ")
         return new_board
@@ -616,8 +622,8 @@ def play_cvc_MinMax (board : Board, depth_exploration : int) :
                 logging.info(f"turn {board.game_count} of random player {board.curr_player} : move {current_move} entered")
             
             else: #The minmax AI is playing
-                board.print_board()
-                current_move = MinMax(board.__deepcopy__(), depth_exploration)
+                #board.print_board()
+                current_move = MinMax(board, depth_exploration)
                 logging.info(f"turn {board.game_count} of AI minmax player {board.curr_player} : move {current_move} entered")
             
             if board.is_valid_loc (current_move) : #the move is possible (location wise)
@@ -725,7 +731,7 @@ def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, de
                 #print('depth :', depth, 'TO_EXPLORE list :', to_explore, 'len(pb) :', len(possible_boards))
                 #print(possible_boards)
                 sub_board = possible_boards[to_explore[depth]]
-                historic_boards.append(sub_board.__deepcopy__())
+                historic_boards.append(sub_board)
                 #sub_board.print_board()
                 possible_boards = sub_board.generate_possible_boards(player)
                 possible_moves = sub_board.generate_all_possible_moves(player)
@@ -795,19 +801,18 @@ def MinMax(board : Board, depth_exploration : int):
                 and the depth of exploration
     Returns : The move of maximum value for AI for the next turn (move_of_max_value : tuple)
     """
-    print('# --------- #\nMinMax')
+    #print('# --------- #\nMinMax')
     AI_player = board.curr_player
     Adverse_player = '0' if AI_player == 'O' else 'O'
     
     depth = 0
     player = AI_player if depth%2 == 0 else Adverse_player
     next_possible_moves = board.generate_all_possible_moves(player)
-    board.print_board()
+    #board.print_board()
     possible_moves = next_possible_moves.copy() if next_possible_moves != None else None
-    
-    board_copy = board.__deepcopy__()    
-    possible_boards_depth1 = board_copy.generate_possible_boards(player)
-    board.print_board()
+      
+    possible_boards_depth1 = board.generate_possible_boards(player)
+    #board.print_board()
 
     node_value = [[] for index_sub_board in range(len(next_possible_moves))]
     #print(possible_moves)
@@ -817,8 +822,8 @@ def MinMax(board : Board, depth_exploration : int):
         depth = 1
         historic_boards = [board]
         to_explore = [1,1]
-        print(f'\n\n##########Move {index_sub_board}############\n---------{next_possible_moves[index_sub_board]}---------')
-        possible_boards_depth1[index_sub_board].print_board()
+        #print(f'\n\n##########Move {index_sub_board}############\n---------{next_possible_moves[index_sub_board]}---------')
+        #possible_boards_depth1[index_sub_board].print_board()
         historic_boards.append(possible_boards_depth1[index_sub_board])
         player = AI_player if depth%2 == 0 else Adverse_player
         #print(f"PLAYER : {player}")
@@ -909,4 +914,4 @@ class MCTS (Board) :
 
 A = Board ()
 A.initialise_game()
-a = play_cvc_MinMax(A, 2)
+a = play_cvc_MinMax(A, 3)
