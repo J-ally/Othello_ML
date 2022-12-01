@@ -1,31 +1,26 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 29 2022
-@author:  jaly, delpierot
+@author:  jaly
 """
 
 import logging
 import numpy as np
 import copy
 import time
-from random import randint
-import matplotlib.pyplot as plt
 import math
+from random import randint
 import sys
-
+import matplotlib.pyplot as plt
 
 sys.setrecursionlimit(1000000000)
 
 ###############################################################################
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
-logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend_debug.log", filemode = "w",
+
+logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
-
-
-logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend_info.log", filemode = "w",
-                    format = "%(asctime)s - %(levelname)s - %(message)s")
-
 
 ###############################################################################
 #                         GAME INITIALISATION                                #
@@ -39,10 +34,6 @@ class Board () :
     """
     
     previous_moves = {"O" : [], "0" : []}
-    board_history = []
-    
-    occupied_tiles = []
-    
     future_possible_boards = []
     
     game_count = 0 #the number of turn played
@@ -60,8 +51,6 @@ class Board () :
         self.board [:] = " "
         
         self.initialise_game()
-        self.future_possible_boards = self.generate_possible_boards(self.curr_player)
-        self.board_history.append(copy.deepcopy(self))
         
         logging.info(f"the size of the of the game : {self.size} \n")
         pass
@@ -82,14 +71,31 @@ class Board () :
         self.board [middle_2][middle_1] = "0"
         
         #move gestion
-        self.occupied_tiles = [(middle_1,middle_1), (middle_1,middle_2),(middle_2,middle_2), (middle_2,middle_1)]
         self.previous_moves["O"] = [(middle_1,middle_1), (middle_2,middle_2)]
         self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
         
-        self.game_count = 5
+        #board history gestion
+        self.game_count = 4
         
         logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
+
+    def __deepcopy__(self):
+        """
+        Replace the deepcopy method to avoid the extra calculation of deepcopy 
+
+        Returns : new_board (Board): a new board with the same attributes as the current board
+        """
+        new_board = Board()
+        
+        #for boards gestion
+        new_board.board = copy.copy(self.board)
+        
+        #for game gestion
+        new_board.previous_moves = copy.copy(self.previous_moves)
+        new_board.game_count = copy.copy(self.game_count)
+        new_board.curr_player = copy.copy(self.curr_player)
+        return new_board
     
     
     def print_board (self, ecart : int = 0) :
@@ -109,7 +115,6 @@ class Board () :
             
         logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
         pass
-    
     
     def is_valid_loc (self, move : tuple) :
         """
@@ -176,7 +181,6 @@ class Board () :
                  player (str): the player who is playing
         """
         self.board [move] = player
-        self.occupied_tiles.append(move)
         
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
@@ -225,8 +229,8 @@ class Board () :
                    
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
-    
-    
+
+
     def generate_board_after_move (self, move : tuple, player : str) :
         """
         returns the board after a move has been played, and updates the following attributes of the future board :
@@ -239,13 +243,12 @@ class Board () :
         Returns : the board after the move has been played (Board)
         """
     
-        new_board = copy.deepcopy(self)
+        new_board = self.__deepcopy__()
         #play for the future board
         new_board.flip_tiles(move, player)
         new_board.place_tile(move, player)
         
         #updating the future board
-        new_board.board_history = self.board_history + [new_board]
         new_board.game_count = self.game_count + 1
         
         if self.curr_player == "0":
@@ -266,7 +269,7 @@ class Board () :
         return new_board
     
     
-    def generate_possible_boards (self, player, depth : int = 1, max_depth : int = 3) :
+    def generate_possible_boards (self, player) :
         """
         returns the list of all possible boards for a given player
         Inputs : player (str): the player who is playing
@@ -288,107 +291,7 @@ class Board () :
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
 
-      
-    def evaluation_func (self):
-        """
-        Lets writh an evaluation function that use as criteria :
-            -the mobility (blank case available)
-            -the position strengh (depending of positions on the board)
-            -the number of point
-        Giving score calculated with the 3 parameters above and weighted
-        by the importance of each evaluation criterion according to
-        the period in the game (beginning, middle and end)
-        !!! the way to weighted each value need to be rethinck 
-        """
         
-        #Defining the strenth of the cases on the board
-        strength = np.zeros((8,8))
-        strength[0,] = strength[7,] = [500, -150, 30, 10, 10, 30, -150, 500]
-        strength[1,] = strength[6,] = [-150, -250, 0, 0, 0, 0, -250, -150]
-        strength[2,] = strength[5,] = [30, 0, 1, 2, 2, 1, 0, 30]
-        strength[3,] = strength[4,] = [10, 0, 2, 16, 16, 2, 0, 10]
-        
-        board_evaluated = self
-        print(f"the board examined : {board_evaluated}")
-
-        nb_points = np.sum(board_evaluated.board == self.curr_player)
-        mobility = np.sum(board_evaluated.board == " ")
-        
-        strength_value = 0
-        size = self.size
-        for row in range(size):
-            for col in range(size):
-                if board_evaluated.board[(row,col)] == self.curr_player:
-                           strength_value += strength[(row,col)]
-        value = 0
-        if board_evaluated.game_count-4 >= 12 :
-            value = 3* mobility + 2* strength_value + nb_points
-        elif board_evaluated.game_count-4 >= 60:
-            value = 3* mobility + 3* strength_value + nb_points
-        else:
-            value = mobility + 2* strength_value + 3* nb_points
-            
-        return (value)
-    
-    def alpha_beta(self, game_count_max):
-        
-        best_move = None
-        moves = None
-        alpha = -math.inf
-        
-        if self.game_count <= 64:
-            
-            if self.game_count == game_count_max:
-                alpha = self.evaluation_func()
-                
-            else:
-                while self.game_count < game_count_max:
-                    
-                    nodes = self.generate_possible_boards(self.curr_player)
-                    moves = self.generate_all_possible_moves(self.curr_player)
-                    
-                    for node in nodes:
-                        
-                        beta = node.beta_alpha(game_count_max)[0]
-                        alpha = max(alpha, beta)
-                        
-                        if alpha >= beta:
-                            ind = nodes.index(node)
-                            best_move = moves[ind]
-                            return alpha, moves, best_move
-        else:
-            pass
-        return alpha, moves, best_move
-
-    def beta_alpha(self, game_count_max):
-        
-        best_move = None
-        moves = None
-        beta = math.inf
-        
-        if self.game_count <= 64:
-            
-            if self.game_count == game_count_max:
-                beta = self.evaluation_func()
-                
-            else :
-                while self.game_count < game_count_max:
-                    
-                    nodes = self.generate_possible_boards(self.curr_player)
-                    moves = self.generate_all_possible_moves(self.curr_player)
-                    
-                    for node in nodes :
-                        alpha = node.alpha_beta(game_count_max)[0]
-                        beta = min(beta, alpha)
-                        
-                        if beta <= alpha:
-                            ind = nodes.index(node)
-                            best_move = moves[ind]
-                            return beta, moves, best_move
-        else:
-            pass
-        return beta, moves, best_move
-                        
     
     def is_not_full (self) :
         """
@@ -402,7 +305,143 @@ class Board () :
         else :
             return True
         
+    def evaluation_func(self, depth_max):
+        """
+        Lets writh an evaluation function that use as criteria :
+            -the mobility (blank case available)
+            -the position strengh (depending of positions on the board)
+            -the number of point
+        Giving score calculated with the 3 parameters above and weighted
+        by the importance of each evaluation criterion according to
+        the period in the game (beginning, middle and end)
+        !!! the way to weighted each value need to be rethinck 
+        """
+
+        if depth_max%2 == 0:
+            current_player = self.curr_player
+        else:
+            logging.info(f"depth_max : {depth_max}. Is not a multiple of 2, we don't need to put the evaluation function at the advantage of the initial player! \n")
+            if self.curr_player == "0":
+                current_player = "O"
+            else:
+                current_player = "0"
+        
+        #Defining the strenth of the cases on the board
+        strength = np.zeros((8,8))
+        strength[0,] = strength[7,] = [500, -150, 30, 10, 10, 30, -150, 500]
+        strength[1,] = strength[6,] = [-150, -250, 0, 0, 0, 0, -250, -150]
+        strength[2,] = strength[5,] = [30, 0, 1, 2, 2, 1, 0, 30]
+        strength[3,] = strength[4,] = [10, 0, 2, 16, 16, 2, 0, 10]
+        
+        board_evaluated = self
+        nb_points = np.sum(board_evaluated.board == current_player)
+        mobility = np.sum(board_evaluated.board == " ")
+        
+
+        strength_value = 0
+        size = self.size
+        for row in range(size):
+            for col in range(size):
+                if board_evaluated.board[(row,col)] == current_player:
+                           strength_value += strength[(row,col)]
+        value = 0
+        if board_evaluated.game_count-4 >= 12 :
+            value = 3* mobility + 2* strength_value + nb_points
+        elif board_evaluated.game_count-4 >= 60:
+            value = 3* mobility + 3* strength_value + nb_points
+        else:
+            value = mobility + 2* strength_value + 3* nb_points
+            
+        return value
     
+            
+    def alpha_value (self, depth, depth_max, alpha, beta):
+        
+        if depth == depth_max:
+            logging.info(f"Actual depth : {depth} is the maximal depth. So it's a leaf! \n")
+            alpha = self.evaluation_func(depth_max)
+            return alpha
+        else:
+            pass
+        
+        alpha = -math.inf
+        
+        if depth < depth_max:
+            logging.info(f"Actual depth : {depth}. So it's possible to generate boards from this actual board! \n")
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                beta = node.beta_value(depth, depth_max, alpha, beta)
+                alpha = max(alpha, beta)
+                
+                if alpha >= beta:
+                    logging.info(f"{alpha} is superior or equal to {beta}. So lpha take the value of beta. This an alpha pruning! \n")
+                    return alpha
+        
+        return alpha
+    
+    
+    def beta_value (self, depth, depth_max, alpha, beta):
+        
+        if depth == depth_max:
+            logging.info(f"Actual depth : {depth} is the maximal depth. So it's a leaf! \n")
+            beta = self.evaluation_func(depth_max)
+            return beta
+        else:
+            pass
+        
+        beta = math.inf
+        
+        if depth < depth_max:
+            logging.info(f"Actual depth : {depth} is not the maxiaml depth. So it's possible to generate boards from this board! \n")
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                alpha = node.alpha_value(depth, depth_max, alpha, beta)
+                beta = min(beta, alpha)
+                
+                if alpha <= beta:
+                    logging.info(f"{beta} is inferior or equal to {alpha}. So beta take the value of alpha. This an beta pruning! \n")
+                    return beta
+        else:
+            pass
+        
+        return beta
+    
+    def alpha_beta(self, depth_max):
+
+        alpha = -math.inf
+        beta = math.inf
+        best_val = alpha
+        
+        best_node = None
+        best_move = None
+        
+        if self.game_count - depth_max > 59:
+            logging.info(f"Maximal depth become :{depth_max}. You can't generate more depth than you had remaining parts! \n")
+            depth_max = 64 - self.game_count
+        else:
+            pass
+        
+        depth = 0
+        if depth < depth_max:
+            logging.info(f"Initial depth : {depth} is inferior to the depth max. It's possible to generate boards from the current board! \n")
+            depth += 1
+            nodes = self.generate_possible_boards(self.curr_player)
+            moves = self.generate_all_possible_moves(self.curr_player)
+            for node in nodes:
+                value = node.alpha_value(depth, depth_max, alpha, beta)
+                if value >= best_val:
+                    best_val = value
+                    best_node = node
+                    if best_node != None:
+                        best_move = moves[nodes.index(best_node)]
+                    else:
+                        best_move = None
+        else:
+            pass
+        
+        return best_node, best_move
+        
+            
 
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
@@ -418,7 +457,7 @@ def calculate_score (board : Board) :
     
     for i in range (board.size) :
         for j in range (board.size) :
-            if board.board[(i,j)] == " " :
+            if board.board[(i,j)] == "" :
                 pass
             elif board.board[(i,j)] == "0" :
                 score = (score[0], score[1]+1)
@@ -428,34 +467,36 @@ def calculate_score (board : Board) :
     return score
 
 
-###############################################################################
-#                               GAME MODES                                    #
-###############################################################################
+def end_of_the_game (white_score : int, black_score : int) :
+    if white_score < black_score:
+        print (f"Game over ! Black win ({black_score})")
+    elif white_score > black_score:
+        print (f"Game over ! White win ({white_score})")
+    else:
+        print (f"Game over ! The game is a draw ({white_score})")
+        pass
 
-def play_cvc_random (board : Board) :
+def who_win (score : tuple) :
+        if score[0] < score[1] :
+            return "black"
+        elif score[0] == score[1] :
+            return "egalite"
+        else :
+            return "white"
+
+def play_cvc_alpha_beta_white (board : Board, depth_max : int) :
     """
-    lets the compluter play against another computer (both using random moves)
+    lets the compluter play with alpha beta function, the another computer
+    chose is move randomly
     Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
-    Returns :
+             depth_max (int) : the max depth
+    Returns : the score, a list with the time took by the alpha_beta funtion for each turn
     """
     start = time.time()
     count_no_possible_moves = 0
     
     while board.is_not_full() :
-        
-        #print(board.is_not_full(), count_no_possible_moves)
-        #board.print_board()
-        #print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
-        
-        #print("evaluation : ", board.evaluation_func())
-        
-        depth_max = 3
-
-        game_count_max = board.game_count + depth_max
-        alpha = -math.inf
-        beta = math.inf
-        board.beta_alpha(game_count_max, alpha, beta)
         
         moves = board.generate_all_possible_moves(board.curr_player)
         logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
@@ -472,12 +513,16 @@ def play_cvc_random (board : Board) :
             
             if count_no_possible_moves > 15 : #to prevent infinite loop
                 score = calculate_score(board)
-                print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+                #print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
                 logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
                 return (board, score)
             
         else :
-            current_move = moves [ randint(0, len(moves)-1) ] 
+            if board.curr_player == "O":
+               current_move = board.alpha_beta(depth_max)[1] #alpha beta for white
+            else :
+                current_move = moves[randint(0, len(moves)-1)] #random for black
+
             logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
             
             if board.is_valid_loc (current_move) : #the move is possible (location wise)
@@ -506,115 +551,32 @@ def play_cvc_random (board : Board) :
                 pass
     
     score = calculate_score(board)
-    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+    #print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
     # board.print_board()
     logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
     return (board, score, final_time_ms)
+scores = []
+for i in range(200):
+    A = Board ()
+    scores.append(play_cvc_alpha_beta_white(A,3))
+
+times = []
+white_w = 0
+black_w = 0
+for i in range (len(scores)) :
+    try :
+        times.append(scores[i][2])
+    except :
+        pass
     
-    
-def play_pvp (board : Board) :
-    """
-    lets the player play against another player
-    Only one board is used to play !
-    Inputs : board (Board object): the board on which the game is played
-    Returns :
-    """
-    flag = True
-    
-    while flag :
-        board.print_board()
-        
-        print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
-        
-        move = str(input ("Enter the coordinates of the tile you want to play (tuple format : (row_index,col_index)) : "))
-        
-        if move == "pass" : #no possible moves for the player
-            board.game_count += 0
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            pass 
-        
-        else : 
-            move = (int(move[1]), int(move[3]))
-            
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {move} entered")
-            
-            if board.is_valid_loc (move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} \n")
-                    
-                    board.game_count += 1
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    print("This move is not possible, please try again")
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {move} already occupied or no tiles to be flipped")
-                    pass
-            
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {move} is out of the board")
-                pass
-            
-            if board.game_count == (board.size**2) : #end of the game
-                flag = False
-                print ("Game over !")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                pass
-            
-    pass
+    if who_win(scores[i][1]) == "white" :
+            white_w += 1
+    elif who_win(scores[i][1]) == "black" :
+            black_w += 1
+    else :
+            white_w += 0.5
+            black_w += 0.5
 
-
-def play_pvc_minmax (board : Board) :
-    """
-    lets a player play against  computer (using minmax algorithm)
-    Inputs : board (Board object): the board on which the game is played
-    Returns :
-
-    Args:
-        board (Board): _description_
-    """
-
-
-###############################################################################
-#                        GAME DECISION AGLGORITHMS                            #
-###############################################################################
-
-###############################################################################
-#                           GAME SCRIPT                                      #
-###############################################################################
-
-# scores = []
-# for i in range (20) :
-#     A = Board ()   
-#     scores.append(play_cvc_random(A))
-# print(scores)
-
-# times = [a[2] for a in scores]
-
-# plt.plot(np.arange(20), times)
-# plt.axhline(np.mean(times), color = "red")
-# plt.ylabel("time (ms)")
-# plt.xlabel("game")
-# plt.show()
-
-A = Board()
-# play_cvc_random(A)
-
-depth_max = 60
-game_count_max = A.game_count + depth_max
-print(A.beta_alpha(game_count_max))
-
+print(white_w, black_w, white_w/(black_w+white_w))
