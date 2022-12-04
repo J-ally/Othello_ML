@@ -7,6 +7,7 @@ Created on Sat Oct 29 2022
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
+import copy
 import time
 import math
 
@@ -36,13 +37,13 @@ class Board () :
     """
     
     previous_moves = {"O" : [], "0" : []}
-    future_possible_boards = []
     
     game_count = 0 #the number of turn played
+    MCTS_score = {"O" : 0, "0" : 0} #the number of wins and losses for each player
     
     #Player defined as O for white and 0 for black
     curr_player = "O"  #current player (white starts)
-    
+
     def __init__ (self, size = 8) :
         """
         initialises the board
@@ -104,20 +105,19 @@ class Board () :
 
     def __deepcopy__(self):
         """
-        Replace the deepcopy method to avoid the extra calculation of deepcopy 
+        Replace the deepcopy method to avoid the extra calculation of copy.deepcopy 
 
         Returns : new_board (Board): a new board with the same attributes as the current board
         """
         new_board = Board()
         
         #for boards gestion
-        new_board.board = self.board
-        new_board.future_possible_boards = self.future_possible_boards
+        new_board.board = copy.copy(self.board)
         
         #for game gestion
-        new_board.previous_moves = self.previous_moves
-        new_board.game_count = self.game_count
-        new_board.curr_player = self.curr_player
+        new_board.previous_moves = copy.copy(self.previous_moves)
+        new_board.game_count = copy.copy(self.game_count)
+        new_board.curr_player = copy.copy(self.curr_player)
         
         return new_board
     
@@ -450,6 +450,7 @@ class Board () :
         
         return beta
 
+
     def alpha_beta(self, depth_max):
         """
         To be documented
@@ -511,7 +512,29 @@ def calculate_score (board : Board) :
     logging.debug (f"score calculated : {score}")
     return score
 
+def who_won (board : Board) :
+    """
+    calculates who won the game
+    Inputs : board (Board object) : the board on which the game is played
+    Returns : the winner of the game (string : "0" or "X")
+    """
+    score = calculate_score(board)
+    if score[0] > score[1] :
+        return "O"
+    elif score[0] < score[1] :
+        return "0"
+    else :
+        return "draw"
 
+def generate_dict_children (board : Board) :
+    """
+    generate the children of the board
+    Inputs : board (Board): the board on which the game is played
+    Returns: dictionary of the children of the board
+    """
+    return ( {"parents" : [board], "children" : board.generate_possible_boards(board.curr_player)} )
+    
+    
 ###############################################################################
 #                               GAME MODES                                    #
 ###############################################################################
@@ -521,7 +544,7 @@ def play_cvc_random (board : Board) :
     lets the compluter play against another computer (both using random moves)
     Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
-    Returns :
+    Returns : (final board, score : (tuple : (white_score, black_score)), time for the party to be played)
     """
     start = time.time()
     count_no_possible_moves = 0
@@ -664,6 +687,98 @@ def play_pvc_minmax (board : Board) :
     """
 
 
+def play_cvc_random_iter(board : Board, iterations : int) :
+    """
+    lets the compluter play against another computer (both using random moves)
+    Only one board is used to play !
+    Inputs : board (Board object): the board on which the game is played
+             iterations (int) : number of turns to be played given the board
+    Returns :
+    """
+    
+    start = time.time()
+    count_no_possible_moves = 0
+    start_game_count = board.game_count
+    board_tree_format = {"parent" : [], "children" : [] }
+    board_tree = {"parent" : [], "children" : [] }
+    
+    while board.is_not_full() and board.game_count < start_game_count + iterations :
+        
+        # print(board.is_not_full(), count_no_possible_moves)
+        board.print_board()
+        print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
+        
+        moves = board.generate_all_possible_moves(board.curr_player)
+        board_tree["parent"], board_tree["children"] = board, moves
+        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
+        
+        if moves == None : #no possible moves for the player
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
+            
+            count_no_possible_moves += 1
+            board.game_count += 0
+            if board.curr_player == "O" :
+                board.curr_player = "0"
+            else :
+                board.curr_player = "O"
+            
+            if count_no_possible_moves > 15 : #to prevent infinite loop
+                score = calculate_score(board)
+                print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+                return (board, score)
+            
+        else :
+            current_move = moves [ randint(0, len(moves)-1) ] 
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
+            
+            if board.is_valid_loc (current_move) : #the move is possible (location wise)
+                
+                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
+                
+                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
+                    
+                    board.place_tile(current_move, board.curr_player)
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
+                    
+                    board.game_count += 1
+                    if board.curr_player == "O" :
+                        board.curr_player = "0"
+                    else :
+                        board.curr_player = "O"
+                
+                else :
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
+                    pass
+            
+            else :
+                print("This move is not possible, please try again")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
+                pass
+    
+    score = calculate_score(board)
+    print (f"The game is over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+    # board.print_board()
+    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+    end = time.time()
+    final_time_ms = round((end-start) * 10**3)
+    return (board_tree, board, score, final_time_ms)
+
+
+def play_MCTS_cvc (board : Board, iter_b4_ro : int, max_depth : int) :
+    """
+    lets a computer play against another computer (using MCTS algorithm)
+    Inputs : board (Board object): the board on which the game is played
+             iter_b4_ro (int) : number of iterations
+             max_depth (int) : maximum depth for the 
+    Returns :
+    """
+    
+# A = Board()
+
+# play_cvc_random_iter(A, 3)
+
 ###############################################################################
 #                        GAME DECISION AGLGORITHMS                            #
 ###############################################################################
@@ -672,7 +787,7 @@ class MCTS (Board) :
     def __init__ (self, board : Board) :
         pass
     
-    # main function for the Monte Carlo Tree Search
+    # # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):
         
     #     while resources_left(time, computational power):
@@ -711,9 +826,13 @@ class MCTS (Board) :
     # def best_child(node):
     #     pick child with highest number of visits
 
+# A = Board()
+
+# print(A.curr_player, A.game_count)
+# A.print_board()
+# play_cvc_random (A)
 
     
-
 ###############################################################################
 #                           GAME SCRIPT                                      #
 ###############################################################################
