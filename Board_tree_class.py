@@ -251,11 +251,11 @@ A = Board(8)
 D = Board (8)
 print(D)
 
-B = Board_tree(A, 0, 1)
+B = Node_tree(A, 0, 1)
 
 # print(B.tree)
 # print(B.decomposed_tree)
 
 # print(B.calculate_and_update_UCB_score(B.decomposed_tree[0], 2, 3))
 # print(B.get_boards_from_depth(3))
-print(B.insert_board_to_dec_tree(D, A))
+print(B.insert_node_to_dec_tree(D, A))
