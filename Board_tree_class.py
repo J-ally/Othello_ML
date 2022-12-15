@@ -10,17 +10,21 @@ import numpy as np
 import logging
 import time
 import math
+import pandas as pd
+import copy
 from random import randint
 
 from othello_backend import Board
 from othello_backend import play_cvc_random_iter
 from othello_backend import play_cvc_random
 
-class Board_tree :
+class Node_tree :
     """
-    generate a tree of all possible boards, and the methods to navigate the tree
+    generate a tree of all possible nodes, and the methods to navigate the tree
     """
+    tree_depth = 0
     tree = {}
+    decomposed_tree = []
     
     def __init__(self, board : Board, local_depth : int, depth : int):
         """
@@ -29,25 +33,26 @@ class Board_tree :
                  local_depth (int): the in between depth of the tree
                  depth (int): the depth of the tree
         """
-        self.tree = self.gen_all_possible_boards(board, local_depth, depth)
+        self.tree = self.gen_all_possible_nodes(board, local_depth, depth)
+        self.tree_depth = depth
+        self.decomposed_tree = self.decompose_tree(self.tree)
         pass
     
     
-    def gen_all_possible_boards (self, board : Board, local_depth : int, depth : int):
+    def gen_all_possible_nodes (self, board : Board, local_depth : int, depth : int):
         """
-        Generate all possible boards from a given board and store them in a tree
+        Generate all possible nodes from a given board and store them in a tree
         Tree is generated from local_depth to depth-1 (depth is not included, and depth-1 level are leaves)
-        Inputs : board (Board): the board from which we want to generate all possible boards
+        Inputs : board (Board): the board from which we want to generate all possible nodes
                  local_depth (int): the in between depth of the tree
                  depth (int): the depth of the tree
         """
-
-        if local_depth == depth :
+        if local_depth == depth +1 :
             return board     
         
         else :
             possibles = board.generate_possible_boards(board.curr_player)
-            r = {"depth" : local_depth, "board" : [],"child" : []}
+            r = {"depth" : local_depth, "board" : [], "score" : 0, "n_vis" : 0, "child" : []}
             
             for poss in possibles :
                 if board not in r["board"] :
@@ -56,23 +61,95 @@ class Board_tree :
                 r["child"].append(self.gen_all_possible_boards(poss, local_depth+1, depth))
         return (r)
     
-    def resume_tree_to_boards (self) :
-        """
-        summarize the tree to a list of boards with indicated level
-        """
-        
-        for key, value in self.tree.items() :
-            pass
     
-    def find_board (self, board : Board) :
+    def decompose_tree (self, given_dict : dict, tree_node_list = []) :
         """
-        Find a board in the tree
-        Inputs : board (Board object): the board to find
-        Returns : the board if found, None otherwise
+        decompose the tree into a list of nodes with their depth, and store them in a list
+        Inputs : depth (int): the depth of the tree
+                 tree_node_list (list): the list of nodes to fill
+        Returns : a list of nodes
         """
+    
+        for child in given_dict["child"] :
+            if child.get("depth") == self.tree_depth : #the before last level of the tree
+                tree_node_list.append({"depth" : child.get("depth"), "board" : child.get("board")[0], 'score': 0, 'n_vis': 0 } )
+                for board in child.get("child") : #the last level of the tree (list of boards)
+                    tree_node_list.append({"depth" : child.get("depth") +1, "board" : board , 'score': 0, 'n_vis': 0} )
+            else : #first levels of the tree
+                tree_node_list.append({"depth" : child.get("depth"), "board" : child.get("board")[0], 'score': 0, 'n_vis': 0 } )
+                self.decompose_tree(child, tree_node_list) #recursion call
+                
+        tree_node_list_2 = [{"depth" : self.tree.get("depth"), "board" : self.tree.get("board")[0], 'score': 0, 'n_vis': 0}] + tree_node_list
+
+        return tree_node_list_2
+    
+    
+    def get_nodes_from_depth (self, depth : int) :
+        """
+        Finds all the node for a given depth
+        Inputs : depth (int): the depth of the tree
+        Returns : a list of nodes
+        """
+        depth_nodes = []
+        for i in range (len(self.decomposed_tree)) :
+            if self.decomposed_tree[i].get("depth") == depth :
+                depth_nodes.append(self.decomposed_tree[i]["board"])
+        return depth_nodes
+    
+    
+    def insert_node_to_dec_tree (self, board_to_add : Board, parent_board : Board ) :
+        """
+        Adds a node in the tree (at the correct index to maintain the tree structure)
+        """
+        for i in range (len(self.decomposed_tree)) :
+            if self.decomposed_tree[i].get("board") == parent_board :
+                decomposed_tree_2 = self.decomposed_tree[:i+1] + \
+                                    [{'depth': self.decomposed_tree[i].get("depth") + 1, 'board': board_to_add, 'score': 0, 'n_vis': 0}] + \
+                                    self.decomposed_tree[i+1 :]
+                break
+        self.decomposed_tree = copy.copy(decomposed_tree_2)
+        return (self.decomposed_tree)
+    
+        
+    def calculate_and_update_UCB_score (self, board : Board, expl_ratio : float, nb_iter : int) :
+        """
+        Calculates and updates the UCB score for a given node
+        Inputs : board (Board): the node for which we want to calculate the UCB score
+                 expl_ratio (float): the exploration ratio
+        Returns : the UCB score
+        """
+        score_2 = 0
+        for i in range (len(self.decomposed_tree)) :
+            if self.decomposed_tree[i].get("board") == board :
+                if self.decomposed_tree[i].get("n_vis") == 0 :
+                    score_2 = 0
+                else : 
+                    score_2 = self.decomposed_tree[i].get("score") + \
+                            expl_ratio * math.sqrt(math.log(nb_iter) / self.decomposed_tree[i].get("n_vis"))
+                self.decomposed_tree[i]["score"] = score_2
+                break
+        return score_2
+    
+    
+    def get_node_with_max_UCB_score (self, depth : int) :
+        """
+        choose the node with the maximum UCB score
+        Inputs : depth (int): the depth of the tree for which we want to choose the node
+        Returns : the node with the maximum UCB score
+        """
+        nodes_considered = self.get_nodes_from_depth(depth)
+        selected_node = nodes_considered[0]
+        
+        for i in range (len(nodes_considered)) :
+            if nodes_considered[i]["score"] > selected_node["score"] :
+                selected_node = nodes_considered[i]
+        return selected_node
+
+
+class MCTS :
+    def __init__(self):
         pass
-        
-        
+    
     def rollout_backpropagation_random (self, board : Board) :
         """
         lets the compluter play against another computer (both using random moves)
@@ -145,37 +222,40 @@ class Board_tree :
         final_time_ms = round((end-start) * 10**3)
         return (board, score, final_time_ms)
     
-    def play_all_parties_from_level (self) :  
-        
-        pass
-        
-        
-    def add_leaf_child_node (self) :
-        """
-        Add a node to the tree
-        """
-        pass
     
+###############################################################################
+#                               GAME MODES                                    #
+###############################################################################
+
+def play_MCTSvc_random (board : Board, depth : int, nb_parties : int) :
+    """
+    play a game between a computer using MCTS and a computer using random moves
+    Inputs : board (Board): a board object
+             depth (int): the depth of the tree for the initialisation of the MCTS
+             nb_parties (int): number of parties to be played
+    """
+    start = time.time()
+    B = Board_tree(board, 0, depth)
+    depth_nodes = B.get_boards_from_depth(depth)
     
-    def update_MCTS_score (self, board : Board, final_score : tuple) :
-        """
-        Update the score of the tree
-        """
-        if final_score[0] > final_score[1] :
-            board.MCTS_score += 1
-        elif final_score[0] < final_score[1] :
-            board.MCTS_score -= 1
-        else :
-            pass
-    
+    for i in range (nb_parties) :
+        print(f"########## PARTY {i+1} ##########")
+        party = B.get_party_output(board)
+        print(party[0].print_board())
+        print(f"########## PARTY {i+1} ##########")
+
+    pass
+
 
 A = Board(8)
-B = Board_tree(A, 0, 2)
-# start = time.time()
-# print(B.tree)
-# end = time.time()
-# print((end-start)*1000)
+D = Board (8)
+print(D)
 
-print(B.tree)
-# party = B.get_party_output(A)
-# print(party[0].print_board())
+B = Board_tree(A, 0, 1)
+
+# print(B.tree)
+# print(B.decomposed_tree)
+
+# print(B.calculate_and_update_UCB_score(B.decomposed_tree[0], 2, 3))
+# print(B.get_boards_from_depth(3))
+print(B.insert_board_to_dec_tree(D, A))
