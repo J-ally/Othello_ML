@@ -58,7 +58,7 @@ class Node_tree :
                 if board not in r["board"] :
                     r["board"].append(board)
                 r["depth"] = local_depth
-                r["child"].append(self.gen_all_possible_boards(poss, local_depth+1, depth))
+                r["child"].append(self.gen_all_possible_nodes(poss, local_depth+1, depth))
         return (r)
     
     
@@ -78,7 +78,8 @@ class Node_tree :
             else : #first levels of the tree
                 tree_node_list.append({"depth" : child.get("depth"), "board" : child.get("board")[0], 'score': 0, 'n_vis': 0 } )
                 self.decompose_tree(child, tree_node_list) #recursion call
-                
+        
+        #the initialization of the tree        
         tree_node_list_2 = [{"depth" : self.tree.get("depth"), "board" : self.tree.get("board")[0], 'score': 0, 'n_vis': 0}] + tree_node_list
 
         return tree_node_list_2
@@ -130,6 +131,17 @@ class Node_tree :
                 break
         return score_2
     
+    def get_leaf_nodes (self) :
+        """
+        Finds all the leaf nodes
+        Returns : a list of leaf nodes
+        """
+        leaf_nodes = []
+        for i in range (len(self.decomposed_tree)) :
+            if self.decomposed_tree[i].get("depth") == self.tree_depth +1 :
+                leaf_nodes.append(self.decomposed_tree[i])
+        return leaf_nodes
+    
     
     def get_node_with_max_UCB_score (self, depth : int) :
         """
@@ -144,118 +156,124 @@ class Node_tree :
             if nodes_considered[i]["score"] > selected_node["score"] :
                 selected_node = nodes_considered[i]
         return selected_node
-
-
-class MCTS :
-    def __init__(self):
-        pass
     
-    def rollout_backpropagation_random (self, board : Board) :
+    
+    def play_cvc_random_with_boards (self, board : Board, boards_played : list, count_no_possible_moves : int) :
         """
         lets the compluter play against another computer (both using random moves)
         Only one board is used to play !
         Inputs : board (Board object): the board on which the game is played
         Returns : (final board, score : (tuple : (white_score, black_score)), time for the party to be played)
         """
-        start = time.time()
-        count_no_possible_moves = 0
         
-        while board.is_not_full() :
+        if board.is_not_full() and count_no_possible_moves < 15 :
+            possible_boards = board.generate_possible_boards(board.curr_player)
             
-            # print(board.is_not_full(), count_no_possible_moves)
-            # board.print_board()
-            # print(f"#### PLAYER {board.curr_player} TURN ! #### turn {board.game_count}")
-            
-            moves = board.generate_all_possible_moves(board.curr_player)
-            logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-            
-            if moves == None : #no possible moves for the player
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
+            if possible_boards == [] : #no moves possible
+                board2 = board.__deepcopy__()
+                board2.game_count += 0
                 
-                count_no_possible_moves += 1
-                board.game_count += 0
-                if board.curr_player == "O" :
-                    board.curr_player = "0"
+                if board2.curr_player == "O" :
+                    board2.curr_player = "0"
                 else :
-                    board.curr_player = "O"
-                
-                if count_no_possible_moves > 15 : #to prevent infinite loop
-                    score = calculate_score(board)
-                    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                    return (board, score)
-                
+                    board2.curr_player = "O"
+
+                boards_played.append(board2)
+                self.play_cvc_random_with_boards(board2, boards_played, count_no_possible_moves+1)
+                    
             else :
-                current_move = moves [ randint(0, len(moves)-1) ] 
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
-                
-                if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                    
-                    tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                    
-                    if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                        
-                        board.place_tile(current_move, board.curr_player)
-                        logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                        
-                        board.game_count += 1
-                        if board.curr_player == "O" :
-                            board.curr_player = "0"
-                        else :
-                            board.curr_player = "O"
-                    
-                    else :
-                        logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                        pass
-                
-                else :
-                    print("This move is not possible, please try again")
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                    pass
+                board2 = possible_boards [ randint(0, len(possible_boards)-1) ] 
+                boards_played.append(board2)
+                # print(boards_played)
+                print(count_no_possible_moves)
+                self.play_cvc_random_with_boards(board2, boards_played, count_no_possible_moves)
         
-        score = calculate_score(board)
-        print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-        # board.print_board()
-        logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-        end = time.time()
-        final_time_ms = round((end-start) * 10**3)
-        return (board, score, final_time_ms)
+        elif count_no_possible_moves > 15 : #to prevent infinite loop
+            score = calculate_score(board)
+            print (f"Game over (not finished) ! | Score : blanc : {score[0]}, noir : {score[1]}")
+            return (score, boards_played)
+        
+        else : #game over
+            score = calculate_score(board)
+            print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+            return (score, boards_played)
     
     
 ###############################################################################
-#                               GAME MODES                                    #
+#                             GAME FUNCTIONS                                  #
 ###############################################################################
 
-def play_MCTSvc_random (board : Board, depth : int, nb_parties : int) :
+def calculate_score (board : Board) :
     """
-    play a game between a computer using MCTS and a computer using random moves
-    Inputs : board (Board): a board object
-             depth (int): the depth of the tree for the initialisation of the MCTS
-             nb_parties (int): number of parties to be played
+    calculates the score of the game
+    Inputs : board (Board object): the board on which the game is played
+    Returns : the score of the game (tuple : (white_score, black_score))
     """
-    start = time.time()
-    B = Board_tree(board, 0, depth)
-    depth_nodes = B.get_boards_from_depth(depth)
+    score = (0,0)
     
-    for i in range (nb_parties) :
-        print(f"########## PARTY {i+1} ##########")
-        party = B.get_party_output(board)
-        print(party[0].print_board())
-        print(f"########## PARTY {i+1} ##########")
-
-    pass
-
+    for i in range (board.size) :
+        for j in range (board.size) :
+            if board.board[(i,j)] == " " :
+                pass
+            elif board.board[(i,j)] == "0" :
+                score = (score[0], score[1]+1)
+            else :
+                score = (score[0]+1, score[1])
+    logging.debug (f"score calculated : {score}")
+    return score
+class MCTS :
+    """
+    The Monte Carlo Search Tree AI
+    1 - It takes the current game state
+    2 - It runs multiple random game simulations starting from this game state
+    3 - For each simulation, the final state is evaluated by a score (higher score = better outcome)
+    4 - It only remembers the next move of each simulation and accumulates the scores for that move
+    5 - Finally, it returns the next move with the highest score
+    """
+    
+    def __init__(self, expl_ratio : float, nb_iter : int, board : Board, node_tree : Node_tree) :
+        self.expl_ration = expl_ratio
+        self.nb_iter = nb_iter
+        self.board = board
+        self.node_tree = node_tree
+        self.init_tree_depth = node_tree.tree_depth
+        pass
+    
+    
+    def select_node (self) :
+        """
+        handles the selection of the MCTS algorithm
+        """
+        
+        pass
+    
+    
+    def exploration_random (self) :
+        """
+        handles the exploration of the MCTS algorithm
+        """
+        leaf_nodes = self.node_tree.get_leaf_nodes()
+        for i in range (len(leaf_nodes)) :
+            if leaf_nodes[i].get("n_vis") == 0 :
+                selected_node = leaf_nodes[i]
+                # we play a random game from this node
+            
+                break
+        
+        pass
+        
 
 A = Board(8)
-D = Board (8)
-print(D)
+B = Node_tree(A, 0, 2)
 
-B = Node_tree(A, 0, 1)
+for _ in range (50) :
+    print(B.play_cvc_random_with_boards(A, [], 0))
 
-# print(B.tree)
 # print(B.decomposed_tree)
-
+# print(B.get_leaf_nodes())
 # print(B.calculate_and_update_UCB_score(B.decomposed_tree[0], 2, 3))
 # print(B.get_boards_from_depth(3))
-print(B.insert_node_to_dec_tree(D, A))
+# print(B.insert_node_to_dec_tree(D, A))
+
+# MCT = MCTS( 1, 10, A, B)
+
