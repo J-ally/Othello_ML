@@ -20,7 +20,8 @@ from othello_backend import play_cvc_random
 
 class Node_tree :
     """
-    generate a tree of all possible nodes, and the methods to navigate the tree
+    generate a tree of all possible nodes (defined with move, UCB_score and nb_iter), 
+    as well as the methods to navigate the tree
     """
     tree_depth = 0
     tree = {}
@@ -42,7 +43,7 @@ class Node_tree :
     def gen_all_possible_nodes (self, board : Board, local_depth : int, depth : int):
         """
         Generate all possible nodes from a given board and store them in a tree
-        Tree is generated from local_depth to depth-1 (depth is not included, and depth-1 level are leaves)
+        Tree is generated from local_depth to depth  (depth +1 level is leaves' level)
         Inputs : board (Board): the board from which we want to generate all possible nodes
                  local_depth (int): the in between depth of the tree
                  depth (int): the depth of the tree
@@ -60,6 +61,49 @@ class Node_tree :
                 r["depth"] = local_depth
                 r["child"].append(self.gen_all_possible_nodes(poss, local_depth+1, depth))
         return (r)
+    
+    
+    def gen_path_from_node (self, board : Board, board_list = []) :
+        """
+        Generate all possible nodes from a given board and store them in a tree
+        Tree is generated from local_depth to depth-1 (depth is not included, and depth-1 level are leaves)
+        Inputs : board (Board): the board from which we want to generate all possible nodes
+                 local_depth (int): the in between depth of the tree
+                 depth (int): the depth of the tree
+        """
+        possibles = board.generate_possible_boards(board.curr_player)
+        # print(possibles == [], board.is_not_full(), len(possibles))
+        
+        if possibles == [] and board.is_not_full() == False :
+            
+            return (board_list + [board] )
+        
+        elif possibles == [] and board.is_not_full() == True :
+
+            board2 = board.__deepcopy__()
+            board2.game_count += 0
+            
+            if board2.curr_player == "O" :
+                board2.curr_player = "0"
+            else :
+                board2.curr_player = "O"
+
+            return (self.gen_path_from_node(board2, board_list +[board2]) )           
+        
+        else :
+            # r = {"depth" : local_depth, "board" : [], "score" : 0, "n_vis" : 0, "child" : []}
+            if len(possibles) == 1 :
+                poss = possibles[0]
+            else : 
+                poss = possibles [ randint(0, len(possibles)-1) ] 
+            return (self.gen_path_from_node(poss, board_list + [poss]))
+            
+            
+                # if board not in r["board"] :
+                #     # r["board"].append(board)
+                # r["depth"] = local_depth
+                # r["child"].append(self.gen_all_possible_nodes(poss, local_depth+1, depth))
+        # return (r)
     
     
     def decompose_tree (self, given_dict : dict, tree_node_list = []) :
@@ -266,8 +310,9 @@ class MCTS :
 A = Board(8)
 B = Node_tree(A, 0, 2)
 
-for _ in range (50) :
-    print(B.play_cvc_random_with_boards(A, [], 0))
+board_list = B.gen_path_from_node(B.decomposed_tree[0]["board"])
+
+print(board_list[4].print_board(), board_list[15].print_board())
 
 # print(B.decomposed_tree)
 # print(B.get_leaf_nodes())

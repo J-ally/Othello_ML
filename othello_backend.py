@@ -279,7 +279,7 @@ class Board () :
         """
         returns the list of all possible boards for a given player
         Inputs : player (str): the player who is playing
-        Returns : the list of all possible boards (list of boards)
+        Returns : the list of all possible boards (list of boards or empty list)
         """        
         possible_boards = []
     
@@ -287,9 +287,6 @@ class Board () :
             for move in self.generate_all_possible_moves(player) :
                 possible_boards.append(self.generate_board_after_move(move, player))
             
-        else :
-            possible_boards.append(self)
-        
         # while max_depth > depth :
         #     for i in range (len(possible_boards)) :
         #         possible_boards[i].future_possible_boards = possible_boards[i].generate_possible_boards(possible_boards[i].curr_player)
@@ -855,3 +852,18 @@ class MCTS (Board) :
 # plt.ylabel("time (ms)")
 # plt.xlabel("game")
 # plt.show()
+
+
+A = Board(8)
+A.board = np.array([['O', '0', '0', '0', '0', '0', '0', 'O'],
+                    ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+                    ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+                    ['O', 'O', '0', 'O', '0', '0', 'O', 'O'],
+                    ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
+                    ['O', 'O', '0', '0', '0', '0', '0', 'O'],
+                    ['O', '0', 'O', 'O', '0', '0', '0', 'O'],
+                    [' ', '0', '0', '0', '0', '0', '0', 'O']])
+
+A.curr_player = "0"
+
+print(A.generate_all_possible_moves(A.curr_player))
