@@ -36,8 +36,6 @@ class Board () :
     0 represents a black tile
     """
     
-    previous_moves = {"O" : [], "0" : []}
-    
     game_count = 0 #the number of turn played
     MCTS_score = {"O" : 0, "0" : 0} #the number of wins and losses for each player
     
@@ -52,7 +50,7 @@ class Board () :
         self.size = size
         self.board = np.zeros((self.size,self.size), dtype= str)
         self.board [:] = " "
-        
+        self.previous_moves = []
         self.initialise_game()
         
         logging.info(f"the size of the of the game : {self.size} \n")
@@ -74,8 +72,8 @@ class Board () :
         self.board [middle_2][middle_1] = "0"
         
         #move gestion
-        self.previous_moves["O"] = [(middle_1,middle_1), (middle_2,middle_2)]
-        self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
+        self.previous_moves.append(["O", ((middle_1,middle_1), (middle_2,middle_2))])
+        self.previous_moves.append(["0", ((middle_1,middle_2), (middle_2,middle_1))])
         
         #board history gestion
         self.game_count = 5
@@ -100,7 +98,7 @@ class Board () :
         print("\n")
             
         logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
-        pass
+        return
     
 
     def __deepcopy__(self):
@@ -243,6 +241,7 @@ class Board () :
             - player 
             - game_count
             - board history 
+            - previous_moves
             
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
@@ -250,22 +249,14 @@ class Board () :
         """
     
         new_board = self.__deepcopy__()
+        
         #play for the future board
         new_board.flip_tiles(move, player)
         new_board.place_tile(move, player)
+        new_board.previous_moves.append([player, move])
         
         #updating the future board
-        new_board.game_count = self.game_count + 1
-        
-        if self.curr_player == "0":
-            curr_player = self.curr_player
-            not_curr_player = "O"
-            new_board.previous_moves = {"O" :self.previous_moves[not_curr_player], "0" : self.previous_moves[curr_player] + [move]}
-        else :
-            curr_player = "O"
-            not_curr_player = self.curr_player
-            new_board.previous_moves = {"O" :self.previous_moves[curr_player] + [move], "0" : self.previous_moves[not_curr_player]}
-        
+        new_board.game_count = self.game_count + 1        
         if self.curr_player == "0" : 
             new_board.curr_player = "O"
         else :
@@ -287,10 +278,6 @@ class Board () :
             for move in self.generate_all_possible_moves(player) :
                 possible_boards.append(self.generate_board_after_move(move, player))
             
-        # while max_depth > depth :
-        #     for i in range (len(possible_boards)) :
-        #         possible_boards[i].future_possible_boards = possible_boards[i].generate_possible_boards(possible_boards[i].curr_player)
-        
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
 
@@ -854,16 +841,21 @@ class MCTS (Board) :
 # plt.show()
 
 
-A = Board(8)
-A.board = np.array([['O', '0', '0', '0', '0', '0', '0', 'O'],
-                    ['O', '0', '0', '0', '0', '0', 'O', 'O'],
-                    ['O', '0', '0', '0', '0', '0', 'O', 'O'],
-                    ['O', 'O', '0', 'O', '0', '0', 'O', 'O'],
-                    ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
-                    ['O', 'O', '0', '0', '0', '0', '0', 'O'],
-                    ['O', '0', 'O', 'O', '0', '0', '0', 'O'],
-                    [' ', '0', '0', '0', '0', '0', '0', 'O']])
+# A = Board(8)
+# A.board = np.array([['O', '0', '0', '0', '0', '0', '0', 'O'],
+#                     ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+#                     ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+#                     ['O', 'O', '0', 'O', '0', '0', 'O', 'O'],
+#                     ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
+#                     ['O', 'O', '0', '0', '0', '0', '0', 'O'],
+#                     ['O', '0', 'O', 'O', '0', '0', '0', 'O'],
+#                     [' ', '0', '0', '0', '0', '0', '0', 'O']])
 
-A.curr_player = "0"
+# boards_poss = A.generate_possible_boards(A.curr_player)
+# print(A.generate_all_possible_moves(A.curr_player))
+# print(A.previous_moves)
 
-print(A.generate_all_possible_moves(A.curr_player))
+
+# print(boards_poss[3].previous_moves)
+# print(boards_poss[2].previous_moves)
+# print(boards_poss[0].previous_moves)
