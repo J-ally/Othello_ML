@@ -260,6 +260,7 @@ class Node_tree :
             print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
             return (score, boards_played)
     
+    
     def merge_branches_dec_tree (self, branch_one : list, branch_two : list) :
         """
         Merges the branches of the tree that have been played
