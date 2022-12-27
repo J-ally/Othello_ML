@@ -4,22 +4,26 @@ Created on Sat Oct 29 2022
 @author:  jaly, delpierot, judith
 """
 
-import logging
-import numpy as np
-import time
-from random import randint
 import matplotlib.pyplot as plt
+import numpy as np
+import logging
+import copy
+import time
+import math
+
+from random import randint
+
 
 ###############################################################################
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
+
 logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend_debug.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 
 logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend_info.log", filemode = "w",
                     format = "%(asctime)s - %(levelname)s - %(message)s")
-
 
 ###############################################################################
 #                         GAME INITIALISATION                                #
@@ -32,14 +36,12 @@ class Board () :
     0 represents a black tile
     """
     
-    previous_moves = {"O" : [], "0" : []}
-    future_possible_boards = []
-    
     game_count = 0 #the number of turn played
+    MCTS_score = {"O" : 0, "0" : 0} #the number of wins and losses for each player
     
     #Player defined as O for white and 0 for black
     curr_player = "O"  #current player (white starts)
-    
+
     def __init__ (self, size = 8) :
         """
         initialises the board
@@ -48,7 +50,7 @@ class Board () :
         self.size = size
         self.board = np.zeros((self.size,self.size), dtype= str)
         self.board [:] = " "
-        
+        self.previous_moves = []
         self.initialise_game()
         
         logging.info(f"the size of the of the game : {self.size} \n")
@@ -70,8 +72,8 @@ class Board () :
         self.board [middle_2][middle_1] = "0"
         
         #move gestion
-        self.previous_moves["O"] = [(middle_1,middle_1), (middle_2,middle_2)]
-        self.previous_moves["0"] = [(middle_1,middle_2), (middle_2,middle_1)]
+        self.previous_moves.append(["O", ((middle_1,middle_1), (middle_2,middle_2))])
+        self.previous_moves.append(["0", ((middle_1,middle_2), (middle_2,middle_1))])
         
         #board history gestion
         self.game_count = 5
@@ -96,25 +98,24 @@ class Board () :
         print("\n")
             
         logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
-        pass
+        return
     
 
     def __deepcopy__(self):
         """
-        Replace the deepcopy method to avoid the extra calculation of deepcopy 
+        Replace the deepcopy method to avoid the extra calculation of copy.deepcopy 
 
         Returns : new_board (Board): a new board with the same attributes as the current board
         """
         new_board = Board()
         
         #for boards gestion
-        new_board.board = self.board
-        new_board.future_possible_boards = self.future_possible_boards
+        new_board.board = copy.copy(self.board)
         
         #for game gestion
-        new_board.previous_moves = self.previous_moves
-        new_board.game_count = self.game_count
-        new_board.curr_player = self.curr_player
+        new_board.previous_moves = copy.copy(self.previous_moves)
+        new_board.game_count = copy.copy(self.game_count)
+        new_board.curr_player = copy.copy(self.curr_player)
         
         return new_board
     
@@ -240,6 +241,7 @@ class Board () :
             - player 
             - game_count
             - board history 
+            - previous_moves
             
         Inputs : move (tuple): the localisation of the tile to be played
                  player (str): the player who is playing
@@ -247,22 +249,14 @@ class Board () :
         """
     
         new_board = self.__deepcopy__()
+        
         #play for the future board
         new_board.flip_tiles(move, player)
         new_board.place_tile(move, player)
+        new_board.previous_moves.append([player, move])
         
         #updating the future board
-        new_board.game_count = self.game_count + 1
-        
-        if self.curr_player == "0":
-            curr_player = self.curr_player
-            not_curr_player = "O"
-            new_board.previous_moves = {"O" :self.previous_moves[not_curr_player], "0" : self.previous_moves[curr_player] + [move]}
-        else :
-            curr_player = "O"
-            not_curr_player = self.curr_player
-            new_board.previous_moves = {"O" :self.previous_moves[curr_player] + [move], "0" : self.previous_moves[not_curr_player]}
-        
+        new_board.game_count = self.game_count + 1        
         if self.curr_player == "0" : 
             new_board.curr_player = "O"
         else :
@@ -276,7 +270,7 @@ class Board () :
         """
         returns the list of all possible boards for a given player
         Inputs : player (str): the player who is playing
-        Returns : the list of all possible boards (list of boards)
+        Returns : the list of all possible boards (list of boards or empty list)
         """        
         possible_boards = []
     
@@ -284,13 +278,6 @@ class Board () :
             for move in self.generate_all_possible_moves(player) :
                 possible_boards.append(self.generate_board_after_move(move, player))
             
-        else :
-            possible_boards.append(self)
-        
-        # while max_depth > depth :
-        #     for i in range (len(possible_boards)) :
-        #         possible_boards[i].future_possible_boards = possible_boards[i].generate_possible_boards(possible_boards[i].curr_player)
-        
         logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
 
@@ -382,6 +369,110 @@ class Board () :
             return True
         
 
+    def alpha_value (self, depth, depth_max, alpha, beta):
+        """
+        to be documented
+
+        Args:
+            depth (_type_): _description_
+            depth_max (_type_): _description_
+            alpha (_type_): _description_
+            beta (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if depth == depth_max:
+            alpha = self.evaluation_func()
+            return alpha
+        else:
+            pass
+        
+        alpha = -math.inf
+        
+        if depth < depth_max:
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                print("depth :", depth)
+                beta = node.beta_value(depth, depth_max, alpha, beta)
+                alpha = max(alpha, beta)
+        else:
+            pass
+        
+        return alpha
+
+
+    def beta_value (self, depth, depth_max, alpha, beta):
+        """
+        To be documented
+
+        Args:
+            depth (_type_): _description_
+            depth_max (_type_): _description_
+            alpha (_type_): _description_
+            beta (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        if depth == depth_max:
+            beta = self.evaluation_func()
+            return beta
+        else:
+            pass
+        
+        beta = math.inf
+        
+        if depth < depth_max:
+            for node in self.generate_possible_boards(self.curr_player):
+                depth += 1
+                print("depth :", depth)
+                alpha = node.alpha_value(depth, depth_max, alpha, beta)
+                beta = min(beta, alpha)
+        else:
+            pass
+        
+        return beta
+
+
+    def alpha_beta(self, depth_max):
+        """
+        To be documented
+
+        Args:
+            depth_max (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        
+        alpha = -math.inf
+        beta = math.inf
+        best_val = alpha
+        
+        best_node = None
+        best_move = None
+        
+        depth = 0
+        if depth <= depth_max:
+            depth += 1
+            nodes = self.generate_possible_boards(self.curr_player)
+            moves = self.generate_all_possible_moves(self.curr_player)
+            for node in nodes:
+                
+                value = node.alpha_value(depth, depth_max, alpha, beta)
+                if value >= best_val:
+                    best_val = value
+                    best_node = node
+                    best_move = moves[nodes.index(best_node)]
+        else:
+            pass
+        
+        return best_node, best_move
+
+# A = Board()
+# depth_max = 10
+# print(A.alpha_beta(depth_max))
 ###############################################################################
 #                             GAME FUNCTIONS                                  #
 ###############################################################################
@@ -405,7 +496,29 @@ def calculate_score (board : Board) :
     logging.debug (f"score calculated : {score}")
     return score
 
+def who_won (board : Board) :
+    """
+    calculates who won the game
+    Inputs : board (Board object) : the board on which the game is played
+    Returns : the winner of the game (string : "0" or "X")
+    """
+    score = calculate_score(board)
+    if score[0] > score[1] :
+        return "O"
+    elif score[0] < score[1] :
+        return "0"
+    else :
+        return "draw"
 
+def generate_dict_children (board : Board) :
+    """
+    generate the children of the board
+    Inputs : board (Board): the board on which the game is played
+    Returns: dictionary of the children of the board
+    """
+    return ( {"parents" : [board], "children" : board.generate_possible_boards(board.curr_player)} )
+    
+    
 ###############################################################################
 #                               GAME MODES                                    #
 ###############################################################################
@@ -415,7 +528,7 @@ def play_cvc_random (board : Board) :
     lets the compluter play against another computer (both using random moves)
     Only one board is used to play !
     Inputs : board (Board object): the board on which the game is played
-    Returns :
+    Returns : (final board, score : (tuple : (white_score, black_score)), time for the party to be played)
     """
     start = time.time()
     count_no_possible_moves = 0
@@ -558,6 +671,19 @@ def play_pvc_minmax (board : Board) :
     """
 
 
+def play_MCTS_cvc (board : Board, iter_b4_ro : int, max_depth : int) :
+    """
+    lets a computer play against another computer (using MCTS algorithm)
+    Inputs : board (Board object): the board on which the game is played
+             iter_b4_ro (int) : number of iterations
+             max_depth (int) : maximum depth for the 
+    Returns :
+    """
+    
+# A = Board()
+
+# play_cvc_random_iter(A, 3)
+
 ###############################################################################
 #                        GAME DECISION AGLGORITHMS                            #
 ###############################################################################
@@ -566,7 +692,7 @@ class MCTS (Board) :
     def __init__ (self, board : Board) :
         pass
     
-    # main function for the Monte Carlo Tree Search
+    # # main function for the Monte Carlo Tree Search
     # def monte_carlo_tree_search(root):
         
     #     while resources_left(time, computational power):
@@ -605,9 +731,13 @@ class MCTS (Board) :
     # def best_child(node):
     #     pick child with highest number of visits
 
+# A = Board()
+
+# print(A.curr_player, A.game_count)
+# A.print_board()
+# play_cvc_random (A)
 
     
-
 ###############################################################################
 #                           GAME SCRIPT                                      #
 ###############################################################################
@@ -630,3 +760,23 @@ class MCTS (Board) :
 # plt.ylabel("time (ms)")
 # plt.xlabel("game")
 # plt.show()
+
+
+# A = Board(8)
+# A.board = np.array([['O', '0', '0', '0', '0', '0', '0', 'O'],
+#                     ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+#                     ['O', '0', '0', '0', '0', '0', 'O', 'O'],
+#                     ['O', 'O', '0', 'O', '0', '0', 'O', 'O'],
+#                     ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'],
+#                     ['O', 'O', '0', '0', '0', '0', '0', 'O'],
+#                     ['O', '0', 'O', 'O', '0', '0', '0', 'O'],
+#                     [' ', '0', '0', '0', '0', '0', '0', 'O']])
+
+# boards_poss = A.generate_possible_boards(A.curr_player)
+# print(A.generate_all_possible_moves(A.curr_player))
+# print(A.previous_moves)
+
+
+# print(boards_poss[3].previous_moves)
+# print(boards_poss[2].previous_moves)
+# print(boards_poss[0].previous_moves)
