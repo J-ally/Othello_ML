@@ -14,8 +14,8 @@ import pandas as pd
 import copy
 from random import randint
 
-from othello_backend import Board
-from othello_backend import play_cvc_random
+from othello_final import Board
+from othello_final import play_random_vs_random
 
 class MCTS_Node :   
         
@@ -38,8 +38,11 @@ class MCTS_Node :
         Returns : the list of children nodes
         """
         possible_boards = self.board.generate_possible_boards(self.board.curr_player)
+
         children = []
         for i in range (len(possible_boards)):
+            possible_boards[i].print_board()
+            print(possible_boards[i].curr_player)
             children.append(MCTS_Node(possible_boards[i], self.depth + 1, self))
         return children
         
@@ -50,13 +53,15 @@ class MCTS_Node :
         Inputs :
         Returns : updates the score of the node as well as the number of visits
         """
-        output_game = play_cvc_random(self.board)
-        score = output_game[1]
+        initial_player = self.board.curr_player
+        print(f"initial player : {initial_player}")
+        output_game = play_random_vs_random(self.board)
+        score = output_game[2]
         self.nb_visit += 1
 
-        if self.board.curr_player == "O" and score[0] > score[1]: #white wins
+        if initial_player == "O" and score[0] > score[1]: #white wins
             self.UCT_score += 1
-        elif self.board.curr_player == "0" and score[0] > score[1]: #black wins
+        elif initial_player == "0" and score[0] > score[1]: #black wins
             self.UCT_score += 1
         else : 
             pass
@@ -77,7 +82,10 @@ class MCTS_Node :
         Inputs : nb_exploration (int) : number of exploration rounds
         Returns : updates the score of the node
         """
-        self.UCT_score = self.win_count / self.nb_visit + 2*(math.sqrt(math.log(nb_exploration) / self.nb_visit))
+        if self.nb_visit == 0 :
+            self.UCT_score = 0
+        else :
+            self.UCT_score = self.win_count / self.nb_visit + 2*(math.sqrt(math.log(nb_exploration) / self.nb_visit))
         pass
     
         
@@ -108,27 +116,24 @@ class MCTS_Node :
         return index_node
     
     
-def play_MCTS_cvc_random (node : MCTS_Node, nb_rounds : int) -> None:
+def play_MCTS_vs_random (node : MCTS_Node, nb_rounds : int) -> None:
     """
     Play one iteration game with MCTS
     Inputs : board : Board, nb_rounds : int
     Returns : None
     """
-    node.generate_children()
-    print(f"current node {node.board.print_board()}")
-    if node.board.is_not_full() :
-        for round in range(nb_rounds) :
-            node.updates_UCT_score_children(round)
-            print(node.choose_child_node())
-            exploration_node = node.children[node.choose_child_node()]     
-            exploration_node.play_random_from_node()
-            return play_MCTS_cvc_random(exploration_node, exploration_node.board, nb_rounds)
+    node.children = node.generate_children()
+    print(f"current node {node.board}")
+    print(f"children {node.children}")
+    for round in range(nb_rounds) :
+        node.updates_UCT_score_children(round)
+        exploration_node = node.children[node.choose_child_node()]
+        exploration_node.board.print_board()     
+        exploration_node.play_random_from_node()
+    return node
 
-    else :
-        return 
-        
 
-    
-A = MCTS_Node(Board(), 0, None)
-print(play_MCTS_cvc_random(A, 10))
+# print(MCTS_Node(Board(), 0, None).generate_children())
+
+print(play_MCTS_vs_random( MCTS_Node(Board(), 0, None), 10))
     

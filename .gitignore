@@ -1,6 +1,8 @@
 logs_othello_backend_debug.log
 logs_othello_backend_info.log
 logs_othello_backend_debug.log
+Dataframes
+Test case
 .gitignore
 .gitattributes
 __pycache__ 
