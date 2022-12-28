@@ -1009,7 +1009,7 @@ def play_alpha_beta_vs_random (board : Board, depth_max : int) :
     return ([f"alpha beta vs random, explo depth {depth_max}", AI_player, score, final_time_ms, board.moves_history])
 
 
-def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
+def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
     """
     lets the compluter play against another computer (both using random moves)
     Only one board is used to play !
@@ -1080,3 +1080,90 @@ def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
     return ["mcts vs random", None, score, final_time_ms, board.moves_history]
+
+def play_mcts_vs_random (board : Board, nb_simulations : int) :
+    """
+    lets the compluter play against another computer (one using random moves, one using AI)
+    Only one board is used to play !
+    Inputs : board (Board object): the board on which the game is played
+            depth_exploration (int): the depth the AI explores the game to play
+    Returns : board (Board object), score , final_time_ms
+    """
+    start = time.time()
+    count_no_possible_moves = 0
+    AI_player = ['0', 'O'][randint(0,1)]
+    #print(f'AI plays : {AI_MinMax_player}')
+    
+    while board.is_not_full() :
+        
+        moves = board.generate_all_possible_moves(board.curr_player)
+        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
+        
+        if moves == None : #no possible moves for the player
+            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
+            
+            count_no_possible_moves += 1
+            board.game_count += 0
+            if board.curr_player == "O" :
+                board.curr_player = "0"
+            else :
+                board.curr_player = "O"
+            
+            if count_no_possible_moves > 3 : #to prevent infinite loop
+                score = calculate_score(board)
+                if AI_player == '0':
+                    print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+                else:
+                    print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+                
+                end = time.time()
+                final_time_ms = round((end-start) * 10**3)
+                return ([f"mcts vs random", AI_player, score, final_time_ms, board.moves_history])
+            
+        else :
+            if board.curr_player != AI_player: #Random is playing
+                current_move = moves [ randint(0, len(moves)-1) ] 
+                logging.info(f"turn {board.game_count} of random player {board.curr_player} : move {current_move} entered")
+            
+            else: #AI is playing
+                #board.print_board()
+                current_move = play_mcts(MCTS_Node(board, None), nb_simulations) #mcts for the player choose
+                logging.info(f"turn {board.game_count} of AI player {board.curr_player} : move {current_move} entered")
+            
+            if board.is_valid_loc (current_move) : #the move is possible (location wise)
+                
+                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
+                
+                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
+                    
+                    board.place_tile(current_move, board.curr_player)
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
+                    
+                    board.game_count += 1
+                    board.moves_history.append([board.curr_player, current_move])
+                    if board.curr_player == "O" :
+                        board.curr_player = "0"
+                    else :
+                        board.curr_player = "O"
+                
+                else :
+                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
+                    pass
+
+            else :
+                print("This move is not possible, please try again")
+                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
+                pass
+    
+    score = calculate_score(board)
+    if AI_player == '0':
+        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+    else:
+        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+    # board.print_board()
+    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+    end = time.time()
+    final_time_ms = round((end-start) * 10**3)
+    return ([f"mcts vs random", AI_player, score, final_time_ms, board.moves_history])
