@@ -1040,7 +1040,7 @@ def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
                 logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
                 end = time.time()
                 final_time_ms = round((end-start) * 10**3)
-                return ["mcts vs random", None, score, final_time_ms, board.moves_history]
+                return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
             
         else :
             current_move = play_mcts(MCTS_Node(board, None), nb_simulations) #mcts for the player choose
@@ -1079,7 +1079,7 @@ def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
     logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
-    return ["mcts vs random", None, score, final_time_ms, board.moves_history]
+    return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
 
 def play_mcts_vs_random (board : Board, nb_simulations : int) :
     """
