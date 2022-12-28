@@ -22,6 +22,7 @@ from othello_final import Board
 from othello_final import play_random_vs_random
 from othello_final import play_min_max_vs_random
 from othello_final import play_alpha_beta_vs_random
+from othello_final import play_mcts_vs_random
 
 sys.setrecursionlimit(1000000000)
 
@@ -167,8 +168,11 @@ def construction_df_results (nb_games : int) :
             two_d_array.append(play_alpha_beta_vs_random(A, 1))
         elif i < 6*nb_games/types_of_games :
             two_d_array.append(play_alpha_beta_vs_random(A, 2))
-        else :
+        elif i < 7*nb_games/types_of_games :
             two_d_array.append(play_alpha_beta_vs_random(A, 3))
+        elif i < 8*nb_games/types_of_games :
+            two_d_array.append(play_mcts_vs_random(A))
+            
             
     df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
     now = int( time.time() )
@@ -177,5 +181,5 @@ def construction_df_results (nb_games : int) :
 
 # for i in range (10) :
 
-construction_df_results(14)
+construction_df_results(16)
 

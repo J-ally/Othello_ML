@@ -1009,7 +1009,7 @@ def play_alpha_beta_vs_random (board : Board, depth_max : int) :
     return ([f"alpha beta vs random, explo depth {depth_max}", AI_player, score, final_time_ms, board.moves_history])
 
 
-def play_mcts_vs_random (board : Board) :
+def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
     """
     lets the compluter play against another computer (both using random moves)
     Only one board is used to play !
@@ -1043,7 +1043,7 @@ def play_mcts_vs_random (board : Board) :
                 return ["mcts vs random", None, score, final_time_ms, board.moves_history]
             
         else :
-            current_move = play_mcts(MCTS_Node(board, None), 100) #mcts for the player choose
+            current_move = play_mcts(MCTS_Node(board, None), nb_simulations) #mcts for the player choose
             logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
             
             if board.is_valid_loc (current_move) : #the move is possible (location wise)
