@@ -175,5 +175,7 @@ def construction_df_results (nb_games : int) :
     df.to_csv(f"Dataframes/{now}_games_data.csv", index=False)
     return df
 
-df = construction_df_results(15000)
+# for i in range (10) :
+
+construction_df_results(14)
 
