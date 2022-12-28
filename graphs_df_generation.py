@@ -16,6 +16,7 @@ import pandas as pd
 
 from random import randint
 from numpy import mean
+from tqdm import tqdm
 
 from othello_final import Board
 from othello_final import play_random_vs_random
@@ -152,7 +153,7 @@ def construction_df_results (nb_games : int) :
     two_d_array = []
     types_of_games = 7
     
-    for i in range (nb_games) :
+    for i in tqdm (range (nb_games), desc="Loading ...") :
         A = Board ()
         if i < nb_games/types_of_games :
             two_d_array.append(play_random_vs_random(A))
@@ -174,5 +175,5 @@ def construction_df_results (nb_games : int) :
     df.to_csv(f"Dataframes/{now}_games_data.csv", index=False)
     return df
 
-df = construction_df_results(10000)
+df = construction_df_results(15000)
 
