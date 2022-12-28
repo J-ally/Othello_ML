@@ -1081,7 +1081,7 @@ def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
     final_time_ms = round((end-start) * 10**3)
     return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
 
-def play_mcts_vs_random (board : Board, nb_simulations : int) :
+def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
     """
     lets the compluter play against another computer (one using random moves, one using AI)
     Only one board is used to play !
