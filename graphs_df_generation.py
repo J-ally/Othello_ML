@@ -156,30 +156,28 @@ def construction_df_results (nb_games : int) :
     
     for i in tqdm (range (nb_games), desc="Loading ...") :
         A = Board ()
-        if i < nb_games/types_of_games :
-            two_d_array.append(play_random_vs_random(A))
-        elif i < 2*nb_games/types_of_games :
-            two_d_array.append(play_min_max_vs_random(A, 1))
-        elif i < 3*nb_games/types_of_games :
-            two_d_array.append(play_min_max_vs_random(A, 2))
-        elif i < 4*nb_games/types_of_games :
-            two_d_array.append(play_min_max_vs_random(A, 3))
-        elif i < 5*nb_games/types_of_games :
-            two_d_array.append(play_alpha_beta_vs_random(A, 1))
-        elif i < 6*nb_games/types_of_games :
-            two_d_array.append(play_alpha_beta_vs_random(A, 2))
-        elif i < 7*nb_games/types_of_games :
-            two_d_array.append(play_alpha_beta_vs_random(A, 3))
-        elif i < 8*nb_games/types_of_games :
-            two_d_array.append(play_mcts_vs_random(A))
+        # if i < nb_games/types_of_games :
+        #     two_d_array.append(play_random_vs_random(A))
+        # elif i < 2*nb_games/types_of_games :
+        #     two_d_array.append(play_min_max_vs_random(A, 1))
+        # elif i < 3*nb_games/types_of_games :
+        #     two_d_array.append(play_min_max_vs_random(A, 2))
+        # elif i < 4*nb_games/types_of_games :
+        #     two_d_array.append(play_min_max_vs_random(A, 3))
+        # elif i < 5*nb_games/types_of_games :
+        #     two_d_array.append(play_alpha_beta_vs_random(A, 1))
+        # elif i < 6*nb_games/types_of_games :
+        #     two_d_array.append(play_alpha_beta_vs_random(A, 2))
+        # elif i < 7*nb_games/types_of_games :
+        #     two_d_array.append(play_alpha_beta_vs_random(A, 3))
+        # if i < 8*nb_games/types_of_games :
+        two_d_array.append(play_mcts_vs_random(A))
             
             
     df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
     now = int( time.time() )
-    df.to_csv(f"Dataframes/{now}_games_data.csv", index=False)
-    return df
+    df.to_csv(f"Dataframes/{now}_games_data-mcts-test.csv", index=False)
 
 # for i in range (10) :
-
-construction_df_results(16)
+# construction_df_results(100)
 

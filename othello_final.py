@@ -16,6 +16,7 @@ import pandas as pd
 
 from random import randint
 from numpy import mean
+from tqdm import tqdm
 
 sys.setrecursionlimit(1000000000)
 
@@ -411,6 +412,7 @@ def Alpha_Beta(board:Board, player:str, AI_player:str, AI_score:int, depth:int, 
             
         return value
     
+    
 def Best_Move ( board:Board, player:str, AI_player:str, AI_score:int, depth_max:int):
     beta = math.inf
     best_value = -math.inf
@@ -456,6 +458,7 @@ def leaf_evaluation(possible_boards : list, depth : int, AI_player : str):
     node_value = max(value_leaf) if (depth-1)%2 == 0 else min(value_leaf)
         
     return node_value
+
 
 def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player):
     """
@@ -626,24 +629,24 @@ class MCTS_Node :
         return children
         
         
-    def play_random_from_node(self) -> None:
+    def play_random_from_node(self, ai_player : str) -> None:
         """
         Play a random game from the current node
-        Inputs :
+        Inputs : ai_player : the player that will be played by the AI
         Returns : updates the score of the node as well as the number of visits
         """
-        initial_player = self.board.curr_player
+        # initial_player = self.board.curr_player
         # print(f"initial player : {initial_player}")
         output_game = play_random_vs_random(self.board)
         score = output_game[2]
+        # print(score, score[0], score[1])
+        # print(type(initial_player))
         self.nb_visit += 1
-
-        if initial_player == "O" and score[0] > score[1]: #white wins
-            self.UCT_score += 1
-        elif initial_player == "0" and score[0] > score[1]: #black wins
-            self.UCT_score += 1
-        else : 
-            pass
+        if ai_player == "0" and score[0] < score[1] : #black wins
+            self.win_count += 1
+        elif ai_player == "O" and score[0] > score[1] : #white wins
+            self.win_count += 1
+        # output_game = None
         pass
 
     
@@ -655,51 +658,64 @@ class MCTS_Node :
         Returns : updates the score of the node
         """
         child = self.children[index_child]
-        child.UCT_score = child.win_count / child.nb_visit + 2*(math.sqrt( math.log(nb_exploration) / child.nb_visit))
-        # print(f"child {index_child} : visit {child.nb_visit} : score : {child.UCT_score}")
+        child.UCT_score += (child.win_count / child.nb_visit) + 2*(math.sqrt( math.log(nb_exploration) / child.nb_visit))
+        # print(f"child {index_child} ; visit {child.nb_visit} ; score : {child.UCT_score} ; win_count : {child.win_count}")
         pass
     
         
-    def choose_child_node (self) :
+    def choose_child_node_index (self) :
         """
         chooses a node to expand (max UCT score)
         Inputs :
         Returns : the index of the node to expand in the list of children
         """
-        index_node = 0
+        # index_node = 0
+        child_score = []
         for child in self.children :
-            if child.UCT_score == 0 : #node not visited
-                return self.children.index(child)
+            child_score.append(child.UCT_score)
+        # print(child_score)
+        if 0 in child_score :
+            return child_score.index(0)
+        else :
+            return np.argmax(child_score)
             
-            elif child.UCT_score > self.children[index_node].UCT_score :
-                index_node = self.children.index(child)
-        return index_node
+        #     if child.nb_visit == 0 : #node not visited
+        #         index_node = self.children.index(child)
+        #         break
+            
+        #     elif child.UCT_score > self.children[index_node].UCT_score :
+        #         index_node = self.children.index(child)
+        # return index_node
     
     
-def play_mcts (node : MCTS_Node, nb_rounds : int) -> None:
+def play_mcts (node : MCTS_Node, nb_rounds : int, ai_player : str) -> None:
     """
     Play one iteration game with MCTS
-    Inputs : board : Board, nb_rounds : int
+    Inputs : board : Board, 
+             nb_rounds : int
+             ai_player : str
     Returns : The board choosen for the simulation
     """
     node.children = node.generate_children()
     # print(f"current node {node.board}")
     # print(f"children {node.children}")
-    for round in range(1, nb_rounds + 1,1) :
+    compteur = 1
+    for round in tqdm (range (1, nb_rounds + 1,1), desc= "Calculation one turn :") :
+        compteur = copy.copy(round)
         # print(f"round {round}")
-        exploration_node = node.children[node.choose_child_node()]
+        exploration_node = node.children[node.choose_child_node_index()]
         # exploration_node.board.print_board()     
-        exploration_node.play_random_from_node()
-        node.calc_UCT_score(round, node.children.index(exploration_node))
+        exploration_node.play_random_from_node(ai_player)
+        node.calc_UCT_score(nb_rounds, node.children.index(exploration_node))
         # print("\n")
-    final_node = node.children[node.choose_child_node()]
+    final_node = node.children[node.choose_child_node_index()]
     return final_node.move
 
 ###############################################################################
 #                          PLAYING FUNCTIONS                                  #
 ###############################################################################
 
-def play_random_vs_random (board : Board) :
+def play_random_vs_random (board_init : Board, print_output : bool = False) -> list:
     """
     lets the compluter play against another computer (both using random moves)
     Only one board is used to play !
@@ -708,6 +724,7 @@ def play_random_vs_random (board : Board) :
     """
     start = time.time()
     count_no_possible_moves = 0
+    board = board_init.__deepcopy__()
     
     while board.is_not_full() :
         
@@ -726,7 +743,8 @@ def play_random_vs_random (board : Board) :
             
             if count_no_possible_moves > 3 : #to prevent infinite loop
                 score = calculate_score(board)
-                print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+                if print_output :
+                    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
                 logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
                 end = time.time()
                 final_time_ms = round((end-start) * 10**3)
@@ -764,61 +782,14 @@ def play_random_vs_random (board : Board) :
                 pass
     
     score = calculate_score(board)
-    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+    if print_output :
+        print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
     # board.print_board()
     logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
     return ["random vs random", None, score, final_time_ms, board.moves_history]
 
-
-def play_random_vs_random_boards (board : Board) :
-    """
-    Inputs : board (Board): _description_
-    """
-    
-    start = time.time()
-    count_no_possible_moves = 0
-    
-    while board.is_not_full() :
-        
-        poss_boards = board.generate_possible_boards(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     boards possible {poss_boards} ")
-        
-        if poss_boards == [] : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
-            
-            count_no_possible_moves += 1
-            board.game_count += 0
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            
-            if count_no_possible_moves > 15 : #to prevent infinite loop
-                score = calculate_score(board)
-                print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                return (board, score)
-            
-        else :
-            board = poss_boards [ randint(0, len(poss_boards)-1) ] 
-            board.game_count += 1
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : board {board} choosen")
-    
-    score = calculate_score(board)
-    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-    # board.print_board()
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-    end = time.time()
-    final_time_ms = round((end-start) * 10**3)
-    return (board, score, final_time_ms)   
-    
 
 def play_min_max_vs_random (board : Board, depth_exploration : int) :
     """
@@ -1081,6 +1052,7 @@ def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
     final_time_ms = round((end-start) * 10**3)
     return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
 
+
 def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
     """
     lets the compluter play against another computer (one using random moves, one using AI)
@@ -1128,7 +1100,7 @@ def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
             
             else: #AI is playing
                 #board.print_board()
-                current_move = play_mcts(MCTS_Node(board, None), nb_simulations) #mcts for the player choose
+                current_move = play_mcts(MCTS_Node(board, None), nb_simulations, AI_player) #mcts for the player choose
                 logging.info(f"turn {board.game_count} of AI player {board.curr_player} : move {current_move} entered")
             
             if board.is_valid_loc (current_move) : #the move is possible (location wise)
@@ -1159,11 +1131,11 @@ def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
     
     score = calculate_score(board)
     if AI_player == '0':
-        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+        print (f"MCTS Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
     else:
-        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+        print (f"MCTS Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
     # board.print_board()
     logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
-    return ([f"mcts vs random", AI_player, score, final_time_ms, board.moves_history])
+    return ([f"mcts vs random, {nb_simulations} rounds", AI_player, score, final_time_ms, board.moves_history])
