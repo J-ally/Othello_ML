@@ -4,18 +4,13 @@ Created on Sat Oct 29 2022
 @author:  jaly, deplierrot, judith
 """
 
-import logging
-import copy
 import time
-import math
 import sys
-import pickle
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from random import randint
-from numpy import mean
 from tqdm import tqdm
 
 from othello_final import Board
@@ -149,7 +144,7 @@ def construction_df_results (nb_games : int) :
     #7 types of games : random vs random, min max vs random depth 1,2,3 , alpha beta vs random depth 1,2,3
     
     two_d_array = []
-    types_of_games = 10
+    types_of_games = 7
     
     for i in tqdm (range (nb_games), desc="Loading ...") :
         A = Board ()
@@ -160,25 +155,19 @@ def construction_df_results (nb_games : int) :
         elif i < 3*nb_games/types_of_games :
             two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 3, nb_simulations= 10, print_output= False))
         elif i < 4*nb_games/types_of_games :
-            two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 4, nb_simulations= 10, print_output= False))
-        elif i < 5*nb_games/types_of_games :
             two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 1, nb_simulations= 10, print_output= False))
-        elif i < 6*nb_games/types_of_games :
+        elif i < 5*nb_games/types_of_games :
             two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 2, nb_simulations= 10, print_output= False))
-        elif i < 7*nb_games/types_of_games :
+        elif i < 6*nb_games/types_of_games :
             two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 3, nb_simulations= 10, print_output= False))
-        elif i < 8*nb_games/types_of_games :
-            two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 4, nb_simulations= 10, print_output= False))
-        elif i < 9*nb_games/types_of_games :
-            two_d_array.append(play_FAST_othello(Board(), "mcts", "random", depth = 4, nb_simulations= 100, print_output= False))
-        elif i < 10*nb_games/types_of_games :
-            two_d_array.append(play_FAST_othello(Board(), "random", "random", depth = 4, nb_simulations= 10, print_output= False))
-    
+        elif i < 7*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "mcts", "random", depth = 4, nb_simulations= 500, print_output= False))
+
     df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
     now = int( time.time() )
-    df.to_csv(f"Dataframes/{now}_games_data-mcts-test.csv", index=False)
+    df.to_csv(f"Dataframes/{now}_games_data_final.csv", index=False)
     
-df = construction_df_results(100)
+df = construction_df_results(10)
 print(df)
 
 

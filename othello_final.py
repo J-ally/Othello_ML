@@ -56,7 +56,6 @@ class Board () :
         self.board = np.zeros((self.size,self.size), dtype= str)
         self.board [:] = " "
         self.moves_history = []
-        self.frontier_tiles = []
         self.initialise_game()
         
         # logging.info(f"the size of the of the game : {self.size} \n")
@@ -104,7 +103,6 @@ class Board () :
         new_board.moves_history = copy.copy(self.moves_history)
         new_board.game_count = copy.copy(self.game_count)
         new_board.curr_player = copy.copy(self.curr_player)
-        new_board.frontier_tiles = copy.copy(self.frontier_tiles)
         
         return new_board
     
@@ -229,9 +227,12 @@ class Board () :
         """
         possible_moves = []
         
-        for move in self.frontier_tiles :
-            if self.generate_tiles_to_be_flipped(move, player) != [] and self.board[(move)] == " " :
-                possible_moves.append(move)
+        for i in range (self.size) :
+            for j in range (self.size) :
+                if self.generate_tiles_to_be_flipped((i,j), player) != [] and self.board[(i,j)] == " " :
+                    possible_moves.append((i,j))
+                else :
+                    pass
         
         if possible_moves == [] :
             # logging.debug(f"turn {self.game_count} of player {self.curr_player} : no possible moves for player {player}")
@@ -239,32 +240,6 @@ class Board () :
                    
         # logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
-
-
-    def update_frontier_tiles (self) :
-        """
-        Updates the frontier tiles : where it is possible to play on the board
-        Inputs :
-        Returns : Updates the fontier_tiles attribute of Board
-        """
-        DIR_TOT = [(-1, -1), (-1, 0), (-1, +1),
-                   (0, -1),           (0, +1),
-                   (+1, -1), (+1, 0), (+1, +1)]
-        
-        frontier_tiles_game = []
-        
-        for move in self.moves_history : #for each move already played
-            for direction in DIR_TOT : #for each direction
-                # print(move, direction)
-                new_move_loc = (move[1][0] + direction[0], move[1][1] + direction[1])
-                
-                if self.is_valid_loc(new_move_loc) : #new_move inside the board
-                    if self.board[new_move_loc] == " " and new_move_loc not in frontier_tiles_game :
-                        frontier_tiles_game.append(new_move_loc)
-                
-        # logging.debug(f"   turn {self.game_count} of player {self.curr_player} : tiles to be flipped : {tiles_to_be_fliped}")
-        self.frontier_tiles = frontier_tiles_game
-        pass
     
         
     def generate_board_after_move (self, move : tuple, player : str) :
@@ -288,7 +263,6 @@ class Board () :
         
         #updating the future board
         new_board.game_count = self.game_count + 1
-        new_board.frontier_tiles = self.update_frontier_tiles()
         
         if self.curr_player == "0":
             new_board.curr_player = "O"
@@ -678,7 +652,7 @@ class MCTS_Node :
         elif ai_player == "O" and score[0] > score[1] : #white wins
             self.win_count += 1
         # output_game = None
-        pass
+        return output_game
 
     
     def calc_UCT_score (self, nb_exploration : int, index_child : int) -> None:
@@ -719,6 +693,7 @@ def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output 
              ai_player : str
     Returns : The board choosen for the simulation
     """
+    two_d_array = []
     node.children = node.generate_children()
     # print(f"current node {node.board}")
     # print(f"children {node.children}")
@@ -726,10 +701,16 @@ def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output 
         # print(f"round {round}")
         exploration_node = node.children[node.choose_child_node_index()]
         # exploration_node.board.print_board()     
-        exploration_node.play_random_from_node(ai_player, print_output)
+        two_d_array.append(exploration_node.play_random_from_node(ai_player, print_output))
         node.calc_UCT_score(nb_rounds, node.children.index(exploration_node))
         # print("\n")
+        
     final_node = node.children[node.choose_child_node_index()]
+    
+    df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
+    now = int( time.time() )
+    df.to_csv(f"Dataframes/{now}_games_data_mcts_generated.csv", index=False)
+    
     return final_node.move
 
 
