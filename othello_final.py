@@ -31,8 +31,9 @@ sys.setrecursionlimit(1000000000)
 #                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 ###############################################################################
-#                         GAME INITIALISATION                                #
+#                         GAME INITIALISATION                                 #
 ###############################################################################
+
 
 class Board () :
     """
@@ -55,7 +56,7 @@ class Board () :
         self.board = np.zeros((self.size,self.size), dtype= str)
         self.board [:] = " "
         self.moves_history = []
-        
+        self.frontier_tiles = []
         self.initialise_game()
         
         # logging.info(f"the size of the of the game : {self.size} \n")
@@ -103,6 +104,8 @@ class Board () :
         new_board.moves_history = copy.copy(self.moves_history)
         new_board.game_count = copy.copy(self.game_count)
         new_board.curr_player = copy.copy(self.curr_player)
+        new_board.frontier_tiles = copy.copy(self.frontier_tiles)
+        
         return new_board
     
     
@@ -171,6 +174,7 @@ class Board () :
                         break
                     
                     elif self.board[new_move_loc] != player and self.board[new_move_loc] != " " :
+                        #empty tile after a tile from the opposite color
                         tiles_to_be_fliped_dir.append(new_move_loc)
                     
                     elif self.board[new_move_loc] == player :
@@ -225,12 +229,9 @@ class Board () :
         """
         possible_moves = []
         
-        for i in range (self.size) :
-            for j in range (self.size) :
-                if self.generate_tiles_to_be_flipped((i,j), player) != [] and self.board[(i,j)] == " " :
-                    possible_moves.append((i,j))
-                else :
-                    pass
+        for move in self.frontier_tiles :
+            if self.generate_tiles_to_be_flipped(move, player) != [] and self.board[(move)] == " " :
+                possible_moves.append(move)
         
         if possible_moves == [] :
             # logging.debug(f"turn {self.game_count} of player {self.curr_player} : no possible moves for player {player}")
@@ -240,6 +241,32 @@ class Board () :
         return possible_moves
 
 
+    def update_frontier_tiles (self) :
+        """
+        Updates the frontier tiles : where it is possible to play on the board
+        Inputs :
+        Returns : Updates the fontier_tiles attribute of Board
+        """
+        DIR_TOT = [(-1, -1), (-1, 0), (-1, +1),
+                   (0, -1),           (0, +1),
+                   (+1, -1), (+1, 0), (+1, +1)]
+        
+        frontier_tiles_game = []
+        
+        for move in self.moves_history : #for each move already played
+            for direction in DIR_TOT : #for each direction
+                # print(move, direction)
+                new_move_loc = (move[1][0] + direction[0], move[1][1] + direction[1])
+                
+                if self.is_valid_loc(new_move_loc) : #new_move inside the board
+                    if self.board[new_move_loc] == " " and new_move_loc not in frontier_tiles_game :
+                        frontier_tiles_game.append(new_move_loc)
+                
+        # logging.debug(f"   turn {self.game_count} of player {self.curr_player} : tiles to be flipped : {tiles_to_be_fliped}")
+        self.frontier_tiles = frontier_tiles_game
+        pass
+    
+        
     def generate_board_after_move (self, move : tuple, player : str) :
         """
         returns the board after a move has been played, and updates the following attributes of the future board :
@@ -261,6 +288,7 @@ class Board () :
         
         #updating the future board
         new_board.game_count = self.game_count + 1
+        new_board.frontier_tiles = self.update_frontier_tiles()
         
         if self.curr_player == "0":
             new_board.curr_player = "O"
@@ -321,7 +349,6 @@ class Board () :
 #                             GAME FUNCTIONS                                  #
 ###############################################################################
 
-
 def calculate_score (board : Board) :
     """
     calculates the score of the game
@@ -332,7 +359,7 @@ def calculate_score (board : Board) :
     
     for i in range (board.size) :
         for j in range (board.size) :
-            if board.board[(i,j)] == "" :
+            if board.board[(i,j)] == " " :
                 pass
             elif board.board[(i,j)] == "0" :
                 score = (score[0], score[1]+1)
@@ -466,7 +493,7 @@ def leaf_evaluation(possible_boards : list, depth : int, AI_player : str):
 
 def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player):
     """
-    Calculates the value of one move by recursion for the AI with the MinMax algorithm.
+    Calculates the value of one move by recursion for the AI with the move_Min_Max algorithm.
     Inputs :  - historic_boards : list of boards    (list of previous nodes in the tree)
             - possible_moves : list of tuple      (next moves possible from the last node of historic_boards)
             - possible_boards : list of boards    (next boards possible from the last node of historic_boards)
@@ -546,7 +573,7 @@ def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, de
 
 def move_Min_Max(board : Board, depth_exploration : int):
     """
-    Calculates the value of the next possible moves for the AI with the MinMax algorithm.
+    Calculates the value of the next possible moves for the AI with the move_Min_Max algorithm.
     Inputs : The current game board 
                 and the depth of exploration
     Returns : The move of maximum value for AI for the next turn (move_of_max_value : tuple)
@@ -600,7 +627,6 @@ def move_Min_Max(board : Board, depth_exploration : int):
 ###############################################################################
 #                          MCTS ALGO FUNCTIONS                             #
 ###############################################################################
-
 
 class MCTS_Node :   
         

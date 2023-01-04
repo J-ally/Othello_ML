@@ -19,10 +19,6 @@ from numpy import mean
 from tqdm import tqdm
 
 from othello_final import Board
-from othello_final import play_random_vs_random
-from othello_final import play_min_max_vs_random
-from othello_final import play_alpha_beta_vs_random
-from othello_final import play_mcts_vs_random
 from othello_final import play_FAST_othello
 
 sys.setrecursionlimit(1000000000)
