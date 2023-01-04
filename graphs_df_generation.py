@@ -23,6 +23,7 @@ from othello_final import play_random_vs_random
 from othello_final import play_min_max_vs_random
 from othello_final import play_alpha_beta_vs_random
 from othello_final import play_mcts_vs_random
+from othello_final import play_FAST_othello
 
 sys.setrecursionlimit(1000000000)
 
@@ -152,32 +153,38 @@ def construction_df_results (nb_games : int) :
     #7 types of games : random vs random, min max vs random depth 1,2,3 , alpha beta vs random depth 1,2,3
     
     two_d_array = []
-    types_of_games = 7
+    types_of_games = 10
     
     for i in tqdm (range (nb_games), desc="Loading ...") :
         A = Board ()
-        # if i < nb_games/types_of_games :
-        #     two_d_array.append(play_random_vs_random(A))
-        # elif i < 2*nb_games/types_of_games :
-        #     two_d_array.append(play_min_max_vs_random(A, 1))
-        # elif i < 3*nb_games/types_of_games :
-        #     two_d_array.append(play_min_max_vs_random(A, 2))
-        # elif i < 4*nb_games/types_of_games :
-        #     two_d_array.append(play_min_max_vs_random(A, 3))
-        # elif i < 5*nb_games/types_of_games :
-        #     two_d_array.append(play_alpha_beta_vs_random(A, 1))
-        # elif i < 6*nb_games/types_of_games :
-        #     two_d_array.append(play_alpha_beta_vs_random(A, 2))
-        # elif i < 7*nb_games/types_of_games :
-        #     two_d_array.append(play_alpha_beta_vs_random(A, 3))
-        # if i < 8*nb_games/types_of_games :
-        two_d_array.append(play_mcts_vs_random(A))
-            
-            
+        if i < nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 1, nb_simulations= 10, print_output= False))
+        elif i < 2*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 2, nb_simulations= 10, print_output= False))
+        elif i < 3*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 3, nb_simulations= 10, print_output= False))
+        elif i < 4*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "min_max", "random", depth = 4, nb_simulations= 10, print_output= False))
+        elif i < 5*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 1, nb_simulations= 10, print_output= False))
+        elif i < 6*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 2, nb_simulations= 10, print_output= False))
+        elif i < 7*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 3, nb_simulations= 10, print_output= False))
+        elif i < 8*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "alpha_beta", "random", depth = 4, nb_simulations= 10, print_output= False))
+        elif i < 9*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "mcts", "random", depth = 4, nb_simulations= 100, print_output= False))
+        elif i < 10*nb_games/types_of_games :
+            two_d_array.append(play_FAST_othello(Board(), "random", "random", depth = 4, nb_simulations= 10, print_output= False))
+    
     df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
     now = int( time.time() )
     df.to_csv(f"Dataframes/{now}_games_data-mcts-test.csv", index=False)
+    
+df = construction_df_results(100)
+print(df)
 
-# for i in range (10) :
-# construction_df_results(100)
+
+
 

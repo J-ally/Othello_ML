@@ -24,11 +24,11 @@ sys.setrecursionlimit(1000000000)
 #                          LOGGING DEFINITION                                 #
 ###############################################################################
 
-logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend_info.log", filemode = "w",
-                    format = "%(asctime)s - %(levelname)s - %(message)s")
+# logging.basicConfig(level=logging.INFO, filename = "logs_othello_backend_info.log", filemode = "w",
+#                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
-logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend_debug.log", filemode = "w",
-                    format = "%(asctime)s - %(levelname)s - %(message)s")
+# logging.basicConfig(level=logging.DEBUG, filename = "logs_othello_backend_debug.log", filemode = "w",
+#                     format = "%(asctime)s - %(levelname)s - %(message)s")
 
 ###############################################################################
 #                         GAME INITIALISATION                                #
@@ -58,7 +58,7 @@ class Board () :
         
         self.initialise_game()
         
-        logging.info(f"the size of the of the game : {self.size} \n")
+        # logging.info(f"the size of the of the game : {self.size} \n")
         pass
 
 
@@ -77,13 +77,15 @@ class Board () :
         self.board [middle_2][middle_1] = "0"
         
         #move gestion
-        self.moves_history.append(["O", ((middle_1,middle_1), (middle_2,middle_2))])
-        self.moves_history.append(["0", ((middle_1,middle_2), (middle_2,middle_1))])
+        self.moves_history.append(["O", (middle_1,middle_1)])
+        self.moves_history.append(["O", (middle_2,middle_2)])
+        self.moves_history.append(["0", (middle_1,middle_2)])
+        self.moves_history.append(["0", (middle_2,middle_1)])
         
         #board history gestion
         self.game_count = 4
         
-        logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
+        # logging.info(f"game initialised with middle_1 = {middle_1} and middle_2 = {middle_2}\n")
         pass
 
     def __deepcopy__(self):
@@ -119,7 +121,7 @@ class Board () :
             print (" "*ecart + "-------------------------------------")
         print("\n")
             
-        logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
+        # logging.debug(f"turn {self.game_count} of {self.curr_player} board printed : {id(self)}\n")
         pass
     
     
@@ -129,13 +131,13 @@ class Board () :
         A valid coordinate must be in the range of the board.
         Inputs : move (tuple) : the localisation of the tile to be played
         Returns : boolean (True if move is valid, False otherwise)
-        
         """
         if 0 <= move[0] < self.size and 0 <= move[1] < self.size :
             #logging.debug(f"turn {self.game_count} of player {self.curr_player} : move {move} is valid (location wise)")
             return True
-        #logging.debug(f"turn {self.game_count} of player {self.curr_player} : move {move} is NOT valid (location wise)")
+                #logging.debug(f"turn {self.game_count} of player {self.curr_player} : move {move} is NOT valid (location wise)")
         return False
+        
    
         
     def generate_tiles_to_be_flipped (self, move : tuple, player : str) :
@@ -162,10 +164,10 @@ class Board () :
                 new_move_loc = (move[0] + curr_direction[0], move[1] + curr_direction[1])
                 
                 if self.is_valid_loc(new_move_loc) : #new_move inside the board
-                    if self.board[new_move_loc] == " " :
+                    if self.board[new_move_loc] == " " : #empty tile nearby
                         break
                     
-                    elif i == 1 and self.board[new_move_loc] == player :
+                    elif i == 1 and self.board[new_move_loc] == player : #same color tile nearby
                         break
                     
                     elif self.board[new_move_loc] != player and self.board[new_move_loc] != " " :
@@ -177,7 +179,7 @@ class Board () :
                 else :
                     break
                 
-        logging.debug(f"   turn {self.game_count} of player {self.curr_player} : tiles to be flipped : {tiles_to_be_fliped}")
+        # logging.debug(f"   turn {self.game_count} of player {self.curr_player} : tiles to be flipped : {tiles_to_be_fliped}")
         return tiles_to_be_fliped
     
     
@@ -189,7 +191,7 @@ class Board () :
         """
         self.board [move] = player
         
-        logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
+        # logging.debug(f"turn {self.game_count} of player {self.curr_player} : tile placed at {move} ")
         pass
     
     
@@ -206,10 +208,10 @@ class Board () :
             for tile in tiles_to_be_fliped :
                 self.board[tile] = player
                 
-            logging.debug(f"turn {self.game_count} of player {self.curr_player} : tiles {tiles_to_be_fliped} fliped ! ")
+            # logging.debug(f"turn {self.game_count} of player {self.curr_player} : tiles {tiles_to_be_fliped} fliped ! ")
         
         else :
-            logging.debug(f"turn {self.game_count} of player {self.curr_player} : no tiles to be flipped ")
+            # logging.debug(f"turn {self.game_count} of player {self.curr_player} : no tiles to be flipped ")
             pass
         
         return tiles_to_be_fliped
@@ -231,10 +233,10 @@ class Board () :
                     pass
         
         if possible_moves == [] :
-            logging.debug(f"turn {self.game_count} of player {self.curr_player} : no possible moves for player {player}")
+            # logging.debug(f"turn {self.game_count} of player {self.curr_player} : no possible moves for player {player}")
             return None
                    
-        logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
+        # logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible moves generated : {possible_moves} ")
         return possible_moves
 
 
@@ -265,7 +267,7 @@ class Board () :
         else :
             new_board.curr_player = "0"
 
-        logging.debug(f"turn {self.game_count} of player {self.curr_player} : board after move {move} generated : {new_board} ")
+        # logging.debug(f"turn {self.game_count} of player {self.curr_player} : board after move {move} generated : {new_board} ")
         return new_board
     
     
@@ -283,7 +285,7 @@ class Board () :
         else :
             possible_boards.append(self)
         
-        logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
+        # logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
 
 
@@ -299,7 +301,7 @@ class Board () :
             for move in self.generate_all_possible_moves(player) :
                 possible_boards.append(self.generate_board_after_move(move, player))
         
-        logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
+        # logging.debug(f"turn {self.game_count} of player {self.curr_player} : all possible boards generated : {possible_boards} ")
         return possible_boards
     
         
@@ -336,7 +338,7 @@ def calculate_score (board : Board) :
                 score = (score[0], score[1]+1)
             else :
                 score = (score[0]+1, score[1])
-    logging.debug (f"score calculated : {score}")
+    # logging.debug (f"score calculated : {score}")
     return score
 
 
@@ -371,6 +373,7 @@ def evaluation_function(board : Board, score : int, player : str):
         #print(f"{np.sum(evaluation_matrix[board.board == '0'])}+{AI_score} = {value_of_the_board}")
         pass
     return value_of_the_board
+
 
 ###############################################################################
 #                        ALPHA BETA ALGO FUNCTIONS                            #
@@ -413,7 +416,7 @@ def Alpha_Beta(board:Board, player:str, AI_player:str, AI_score:int, depth:int, 
         return value
     
     
-def Best_Move ( board:Board, player:str, AI_player:str, AI_score:int, depth_max:int):
+def move_Alpha_Beta ( board:Board, player:str, AI_player:str, AI_score:int, depth_max:int):
     beta = math.inf
     best_value = -math.inf
     best_node = None
@@ -434,6 +437,7 @@ def Best_Move ( board:Board, player:str, AI_player:str, AI_score:int, depth_max:
             best_move = moves[boards_list.index(best_board)]
 
     return best_move
+
 
 ###############################################################################
 #                          MIN MAX ALGO FUNCTIONS                             #
@@ -540,7 +544,7 @@ def recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, de
             return recursion_MinMax(historic_boards, possible_moves, possible_boards, depth, depth_exploration, node_value, to_explore, AI_player)
 
 
-def MinMax(board : Board, depth_exploration : int):
+def move_Min_Max(board : Board, depth_exploration : int):
     """
     Calculates the value of the next possible moves for the AI with the MinMax algorithm.
     Inputs : The current game board 
@@ -592,6 +596,7 @@ def MinMax(board : Board, depth_exploration : int):
         
     return move_of_max_value
 
+
 ###############################################################################
 #                          MCTS ALGO FUNCTIONS                             #
 ###############################################################################
@@ -629,7 +634,7 @@ class MCTS_Node :
         return children
         
         
-    def play_random_from_node(self, ai_player : str) -> None:
+    def play_random_from_node(self, ai_player : str, print_output : bool) -> None:
         """
         Play a random game from the current node
         Inputs : ai_player : the player that will be played by the AI
@@ -637,7 +642,7 @@ class MCTS_Node :
         """
         # initial_player = self.board.curr_player
         # print(f"initial player : {initial_player}")
-        output_game = play_random_vs_random(self.board)
+        output_game = play_FAST_random_vs_random (self.board, print_output)
         score = output_game[2]
         # print(score, score[0], score[1])
         # print(type(initial_player))
@@ -678,17 +683,9 @@ class MCTS_Node :
             return child_score.index(0)
         else :
             return np.argmax(child_score)
-            
-        #     if child.nb_visit == 0 : #node not visited
-        #         index_node = self.children.index(child)
-        #         break
-            
-        #     elif child.UCT_score > self.children[index_node].UCT_score :
-        #         index_node = self.children.index(child)
-        # return index_node
     
     
-def play_mcts (node : MCTS_Node, nb_rounds : int, ai_player : str) -> None:
+def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output : bool) -> None:
     """
     Play one iteration game with MCTS
     Inputs : board : Board, 
@@ -699,43 +696,35 @@ def play_mcts (node : MCTS_Node, nb_rounds : int, ai_player : str) -> None:
     node.children = node.generate_children()
     # print(f"current node {node.board}")
     # print(f"children {node.children}")
-    compteur = 1
-    for round in tqdm (range (1, nb_rounds + 1,1), desc= "Calculation one turn :") :
-        compteur = copy.copy(round)
+    for round in tqdm (range (1, nb_rounds + 1,1), desc= "Calculation one turn ") :
         # print(f"round {round}")
         exploration_node = node.children[node.choose_child_node_index()]
         # exploration_node.board.print_board()     
-        exploration_node.play_random_from_node(ai_player)
+        exploration_node.play_random_from_node(ai_player, print_output)
         node.calc_UCT_score(nb_rounds, node.children.index(exploration_node))
         # print("\n")
     final_node = node.children[node.choose_child_node_index()]
     return final_node.move
 
-###############################################################################
-#                          PLAYING FUNCTIONS                                  #
-###############################################################################
 
-def play_random_vs_random (board_init : Board, print_output : bool = False) -> list:
+def play_FAST_random_vs_random (board_init : Board, print_output : bool) -> list:
     """
-    lets the compluter play against another computer (both using random moves)
-    Only one board is used to play !
+    Lets the computer play against another computer (both using random moves)
+    Only one board is used to play
     Inputs : board (Board object): the board on which the game is played
+             print_output (bool): choose if the board is printed after each party
     Returns : (final board, score : (tuple : (white_score, black_score)), time for the party to be played)
     """
     start = time.time()
     count_no_possible_moves = 0
     board = board_init.__deepcopy__()
-    
+
     while board.is_not_full() :
-        
+
         moves = board.generate_all_possible_moves(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-        
+
         if moves == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
-            
             count_no_possible_moves += 1
-            board.game_count += 0
             if board.curr_player == "O" :
                 board.curr_player = "0"
             else :
@@ -744,398 +733,124 @@ def play_random_vs_random (board_init : Board, print_output : bool = False) -> l
             if count_no_possible_moves > 3 : #to prevent infinite loop
                 score = calculate_score(board)
                 if print_output :
-                    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+                    print (f"Simulation over ! | Score : blanc : {score[0]}, noir : {score[1]}")
                 end = time.time()
                 final_time_ms = round((end-start) * 10**3)
-                return ["random vs random", None, score, final_time_ms, board.moves_history]
+                return ([f"random vs random", None, score, final_time_ms, board.moves_history])
             
-        else :
+        else : #some moves are possible 
             current_move = moves [ randint(0, len(moves)-1) ] 
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
-            
-            if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                    
-                    board.game_count += 1
-                    board.moves_history.append([board.curr_player, current_move])
-                    
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                    pass
-            
+            board.flip_tiles(current_move, board.curr_player)
+
+            #for next turn
+            board.place_tile(current_move, board.curr_player)
+            board.game_count += 1
+            board.moves_history.append([board.curr_player, current_move])
+        
+            if board.curr_player == "O" :
+                board.curr_player = "0"
             else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                pass
-    
+                board.curr_player = "O"
+
     score = calculate_score(board)
     if print_output :
-        print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
+        print (f"Simulation over ! | Score : blanc : {score[0]}, noir : {score[1]}")
     # board.print_board()
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
     return ["random vs random", None, score, final_time_ms, board.moves_history]
 
 
-def play_min_max_vs_random (board : Board, depth_exploration : int) :
-    """
-    lets the compluter play against another computer (one using random moves, one using AI)
-    Only one board is used to play !
-    Inputs : board (Board object): the board on which the game is played
-            depth_exploration (int): the depth the AI explores the game to play
-    Returns : board (Board object), score , final_time_ms
-    """
-    start = time.time()
-    count_no_possible_moves = 0
-    AI_MinMax_player = ['0', 'O'][randint(0,1)]
-    #print(f'AI plays : {AI_MinMax_player}')
-    
-    while board.is_not_full() :
-        
-        moves = board.generate_all_possible_moves(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-        
-        if moves == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
-            
-            count_no_possible_moves += 1
-            board.game_count += 0
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            
-            if count_no_possible_moves > 3 : #to prevent infinite loop
-                score = calculate_score(board)
-                if AI_MinMax_player == '0':
-                    print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-                else:
-                    print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                
-                end = time.time()
-                final_time_ms = round((end-start) * 10**3)
-                return ([f"min max vs random, explo depth {depth_exploration}", AI_MinMax_player, score, final_time_ms, board.moves_history])
-            
-        else :
-            if board.curr_player != AI_MinMax_player: #Random is playing
-                current_move = moves [ randint(0, len(moves)-1) ] 
-                logging.info(f"turn {board.game_count} of random player {board.curr_player} : move {current_move} entered")
-            
-            else: #The minmax AI is playing
-                #board.print_board()
-                current_move = MinMax(board, depth_exploration)
-                logging.info(f"turn {board.game_count} of AI minmax player {board.curr_player} : move {current_move} entered")
-            
-            if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                    
-                    board.game_count += 1
-                    board.moves_history.append([board.curr_player, current_move])
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                    pass
+###############################################################################
+#                          PLAYING FUNCTIONS                                  #
+###############################################################################
 
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                pass
-    
-    score = calculate_score(board)
-    if AI_MinMax_player == '0':
-        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-    else:
-        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-    # board.print_board()
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-    end = time.time()
-    final_time_ms = round((end-start) * 10**3)
-    return ([f"min max vs random, explo depth {depth_exploration}", AI_MinMax_player, score, final_time_ms, board.moves_history])
-
-
-def play_alpha_beta_vs_random (board : Board, depth_max : int) :
-    """
-    lets the compluter play with alpha beta function, the another computer
-    chose is move randomly
-    Only one board is used to play !
-    Inputs : board (Board object): the board on which the game is played
-             depth_max (int) : the max depth
-    Returns : the score, a list with the time took by the alpha_beta funtion for each turn
-    """
-    start = time.time()
-    count_no_possible_moves = 0
-    position = randint(0,1)
-    AI_player = ['O', '0'][position]
-
-    if position == 0 :
-        position_adverse = 1
-    else:
-        position_adverse = 0
-
-    adverse_player = None
-    if AI_player == '0':
-        adverse_player = 'O'
-    else:
-        adverse_player = '0'
-    
-    while board.is_not_full() :
-        
-        moves = board.generate_all_possible_moves(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-        
-        if moves == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
-            
-            count_no_possible_moves += 1
-            board.game_count += 0
-            if board.curr_player == "O" :
-                board.curr_player = "0"
-            else :
-                board.curr_player = "O"
-            
-            if count_no_possible_moves > 3 : #to prevent infinite loop
-                score = calculate_score(board)
-                if AI_player == '0':
-                    print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-                else:
-                    print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-                end = time.time()
-                final_time_ms = round((end-start) * 10**3)
-
-                #print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                return ([f"alpha beta vs random, explo depth {depth_max}", AI_player, score, final_time_ms, board.moves_history])
-            
-        else :
-            if board.curr_player == AI_player :
-                AI_score = calculate_score(board)[position]
-                current_move = Best_Move (board, board.curr_player, AI_player, AI_score, depth_max) #alpha beta for the player choose
-                logging.info(f"This the move played by alpha beta player {current_move} \n")
-            else :
-                current_move = moves[randint(0, len(moves)-1)] #random for the other player
-
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
-            
-            if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                    
-                    board.game_count += 1
-                    board.moves_history.append([board.curr_player, current_move])
-                    
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                    pass
-            
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                pass
-    
-    score = calculate_score(board)
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-    if AI_player == '0':
-        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-    else:
-        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-    end = time.time()
-    final_time_ms = round((end-start) * 10**3)
-    return ([f"alpha beta vs random, explo depth {depth_max}", AI_player, score, final_time_ms, board.moves_history])
-
-
-def play_mcts_vs_mcts (board : Board, nb_simulations : int = 100) :
-    """
-    lets the compluter play against another computer (both using random moves)
-    Only one board is used to play !
-    Inputs : board (Board object): the board on which the game is played
-    Returns : (final board, score : (tuple : (white_score, black_score)), time for the party to be played)
+def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, depth : int, nb_simulations : int = 500, print_output : bool = False ) :
+    """ 
+    play all types of games (AI vs AI or AI vs player or player vs player or random vs random)
+    Only one board is used to play ! (but not returned at the end)
+    Inputs : board_init (Board object): the board on which the game is played
+             AI_type (str) : the type of AI that will be played
+                    can be "random", "min_max", "alpha_beta", "mcts", "human"
+             player_type (str) : the type of player that will be played
+                    can be "random", "min_max", "alpha_beta", "mcts", "human"
+             depth (int) : the depth of the search tree for the AI (needed for min max and alpha beta)
+    Returns : [f"{AI_type} vs {player_type}", AI_player, score, final_time_ms, board.moves_history]
     """
     start = time.time()
     count_no_possible_moves = 0
     
+    board = board_init.__deepcopy__()
+
+    if AI_type == "random" or AI_type == "human" :
+        AI_player = None
+    else : 
+        position = randint(0,1)
+        AI_player = ['0', 'O'][position]
+        
     while board.is_not_full() :
-        
+    
         moves = board.generate_all_possible_moves(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-        
+        # print("moves possible", moves)
         if moves == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
             
             count_no_possible_moves += 1
-            board.game_count += 0
             if board.curr_player == "O" :
                 board.curr_player = "0"
             else :
                 board.curr_player = "O"
-            
+
             if count_no_possible_moves > 3 : #to prevent infinite loop
                 score = calculate_score(board)
-                print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+                if print_output :
+                    if AI_player == '0':
+                        print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+                    else:
+                        print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
+
                 end = time.time()
                 final_time_ms = round((end-start) * 10**3)
-                return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
-            
-        else :
-            current_move = play_mcts(MCTS_Node(board, None), nb_simulations) #mcts for the player choose
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : move {current_move} entered")
-            
-            if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                    
-                    board.game_count += 1
-                    board.moves_history.append([board.curr_player, current_move])
-                    
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                    pass
-            
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                pass
-    
-    score = calculate_score(board)
-    print (f"Game over ! | Score : blanc : {score[0]}, noir : {score[1]}")
-    # board.print_board()
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-    end = time.time()
-    final_time_ms = round((end-start) * 10**3)
-    return ["mcts vs mcts", None, score, final_time_ms, board.moves_history]
+                return [f"{AI_type} vs {player_type}, depth {depth}, nb rounds {nb_simulations}", AI_player, score, final_time_ms, board.moves_history]
 
-
-def play_mcts_vs_random (board : Board, nb_simulations : int = 100) :
-    """
-    lets the compluter play against another computer (one using random moves, one using AI)
-    Only one board is used to play !
-    Inputs : board (Board object): the board on which the game is played
-            depth_exploration (int): the depth the AI explores the game to play
-    Returns : board (Board object), score , final_time_ms
-    """
-    start = time.time()
-    count_no_possible_moves = 0
-    AI_player = ['0', 'O'][randint(0,1)]
-    #print(f'AI plays : {AI_MinMax_player}')
-    
-    while board.is_not_full() :
-        
-        moves = board.generate_all_possible_moves(board.curr_player)
-        logging.info(f"turn {board.game_count} of player {board.curr_player} :     moves possible {moves} ")
-        
-        if moves == None : #no possible moves for the player
-            logging.info(f"turn {board.game_count} of player {board.curr_player} : tile not placed ! No possible moves \n")
+        else : # some moves are possible  
+            if board.curr_player != AI_player: # player is playing (can be "random", "min_max", "alpha_beta", "mcts", "human")
+                if player_type == "human" :
+                    current_move = input(f"Enter your move for player {board.curr_player} : ")           
+                elif player_type == "random" :
+                    current_move = moves [ randint(0, len(moves)-1) ] 
+                elif player_type == "min_max" :
+                    current_move = move_Min_Max (board, depth)
+                elif player_type == "mcts" :
+                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output)
+                    
+            else: # AI is playing (can be "random", "min_max", "alpha_beta", "mcts", "human")
+                if AI_type == "human" :
+                    current_move = input(f"Enter your move for player {board.curr_player} : ")
+                elif AI_type == "random" :
+                    current_move = moves [ randint(0, len(moves)-1) ] 
+                elif AI_type == "min_max" :
+                    current_move = move_Min_Max (board, depth)
+                elif AI_type == "alpha_beta" :
+                    AI_score = calculate_score(board)[position]
+                    current_move = move_Alpha_Beta (board, board.curr_player, AI_player, AI_score, depth)
+                elif AI_type == "mcts" :
+                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output)
             
-            count_no_possible_moves += 1
-            board.game_count += 0
+            board.flip_tiles(current_move, board.curr_player)
+            board.place_tile(current_move, board.curr_player)
+            board.game_count += 1
+            board.moves_history.append([board.curr_player, current_move])
             if board.curr_player == "O" :
                 board.curr_player = "0"
             else :
                 board.curr_player = "O"
-            
-            if count_no_possible_moves > 3 : #to prevent infinite loop
-                score = calculate_score(board)
-                if AI_player == '0':
-                    print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-                else:
-                    print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
-                
-                end = time.time()
-                final_time_ms = round((end-start) * 10**3)
-                return ([f"mcts vs random", AI_player, score, final_time_ms, board.moves_history])
-            
-        else :
-            if board.curr_player != AI_player: #Random is playing
-                current_move = moves [ randint(0, len(moves)-1) ] 
-                logging.info(f"turn {board.game_count} of random player {board.curr_player} : move {current_move} entered")
-            
-            else: #AI is playing
-                #board.print_board()
-                current_move = play_mcts(MCTS_Node(board, None), nb_simulations, AI_player) #mcts for the player choose
-                logging.info(f"turn {board.game_count} of AI player {board.curr_player} : move {current_move} entered")
-            
-            if board.is_valid_loc (current_move) : #the move is possible (location wise)
-                
-                tiles_to_be_fliped = board.flip_tiles(current_move, board.curr_player)
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tiles fliped : {tiles_to_be_fliped}")
-                
-                if tiles_to_be_fliped != [] : #the move is possible (gameplay wise)
-                    
-                    board.place_tile(current_move, board.curr_player)
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} \n")
-                    
-                    board.game_count += 1
-                    board.moves_history.append([board.curr_player, current_move])
-                    if board.curr_player == "O" :
-                        board.curr_player = "0"
-                    else :
-                        board.curr_player = "O"
-                
-                else :
-                    logging.info(f"turn {board.game_count} of player {board.curr_player} : tile placed at {current_move} already occupied or no tiles to be flipped")
-                    pass
 
-            else :
-                print("This move is not possible, please try again")
-                logging.info(f"turn {board.game_count} of player {board.curr_player} : tile at {current_move} is out of the board")
-                pass
-    
     score = calculate_score(board)
-    if AI_player == '0':
-        print (f"MCTS Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
-    else:
-        print (f"MCTS Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
-    # board.print_board()
-    logging.info(f"turn {board.game_count} of player {board.curr_player} : game over \n")
+    if print_output :
+        if AI_player == '0':
+            print (f"Game over ! | Score : blanc : {score[0]}, noir (IA) : {score[1]}")
+        else:
+            print (f"Game over ! | Score : blanc (IA) : {score[0]}, noir : {score[1]}")
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
-    return ([f"mcts vs random, {nb_simulations} rounds", AI_player, score, final_time_ms, board.moves_history])
+    return [f"{AI_type} vs {player_type}, depth {depth}, nb rounds {nb_simulations}", AI_player, score, final_time_ms, board.moves_history]
