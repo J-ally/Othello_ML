@@ -685,7 +685,7 @@ class MCTS_Node :
             return np.argmax(child_score)
     
     
-def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output : bool) -> None:
+def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output : bool, save_party : bool) -> None:
     """
     Play one iteration game with MCTS
     Inputs : board : Board, 
@@ -693,7 +693,8 @@ def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output 
              ai_player : str
     Returns : The board choosen for the simulation
     """
-    two_d_array = []
+    if save_party :
+        two_d_array = []
     node.children = node.generate_children()
     # print(f"current node {node.board}")
     # print(f"children {node.children}")
@@ -701,15 +702,19 @@ def move_MCTS (node : MCTS_Node, nb_rounds : int, ai_player : str, print_output 
         # print(f"round {round}")
         exploration_node = node.children[node.choose_child_node_index()]
         # exploration_node.board.print_board()     
-        two_d_array.append(exploration_node.play_random_from_node(ai_player, print_output))
+        if save_party : 
+            two_d_array.append(exploration_node.play_random_from_node(ai_player, print_output))
+        else :
+            exploration_node.play_random_from_node(ai_player, print_output)
         node.calc_UCT_score(nb_rounds, node.children.index(exploration_node))
         # print("\n")
         
     final_node = node.children[node.choose_child_node_index()]
     
-    df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
-    now = int( time.time() )
-    df.to_csv(f"Dataframes/{now}_games_data_mcts_generated.csv", index=False)
+    if save_party : 
+        df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
+        now = int( time.time() )
+        df.to_csv(f"Dataframes/{now}_games_data_mcts_generated.csv", index=False)
     
     return final_node.move
 
@@ -828,7 +833,7 @@ def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, dep
                 elif player_type == "min_max" :
                     current_move = move_Min_Max (board, depth)
                 elif player_type == "mcts" :
-                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output)
+                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output, save_party=False)
                     
             else: # AI is playing (can be "random", "min_max", "alpha_beta", "mcts", "human")
                 if AI_type == "human" :
@@ -841,7 +846,7 @@ def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, dep
                     AI_score = calculate_score(board)[position]
                     current_move = move_Alpha_Beta (board, board.curr_player, AI_player, AI_score, depth)
                 elif AI_type == "mcts" :
-                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output)
+                    current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output, save_party=False)
             
             board.flip_tiles(current_move, board.curr_player)
             board.place_tile(current_move, board.curr_player)
