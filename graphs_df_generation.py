@@ -166,9 +166,10 @@ def construction_df_results (nb_games : int) :
     df = pd.DataFrame(two_d_array, columns = ["Game type", "AI player", "final score", "play duration", "moves played"])
     now = int( time.time() )
     df.to_csv(f"Dataframes/{now}_games_data_final.csv", index=False)
+    print(df.head())
     
-df = construction_df_results(10)
-print(df)
+for i in range (30) :
+    df =  construction_df_results(140)
 
 
 
