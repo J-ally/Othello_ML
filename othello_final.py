@@ -380,44 +380,47 @@ def evaluation_function(board : Board, score : int, player : str):
 #                        ALPHA BETA ALGO FUNCTIONS                            #
 ###############################################################################
 
-def Alpha_Beta(board:Board, player:str, AI_player:str, AI_score:int, depth:int, depth_max:int, alpha:float, beta:float):
-    if depth == depth_max or board.game_count ==64 :
-        if board.curr_player == "O":
+def Alpha_Beta(board:Board, AI_player:str, depth:int, depth_max:int, alpha:float, beta:float):
+
+    if board.curr_player == "O":
+        player = "0"
+    else:
+        player = "O"
+
+    #Evaluation if the board is a leaf or it's the end of the game or there is no one can play
+    if depth == depth_max or board.game_count == 64 or board.generate_possible_boards(board.curr_player) == None and board.generate_possible_boards(player)== None:
+        if AI_player == "O":
             score = calculate_score(board)[0]
         else:
             score = calculate_score(board)[1]
-        return evaluation_function(board, score, board.curr_player)
+        value = evaluation_function(board, score, AI_player)
     
     else:
         depth += 1
-        for board in board.generate_possible_boards(board.curr_player):
+
+        if board.generate_possible_boards(board.curr_player) == None:
+            board_list = board.generate_possible_boards(board.curr_player)
+        else:
+            board_list = board.generate_possible_boards(player)
+
+        for board in board_list:
             if board.curr_player == AI_player:
                 value = -math.inf
 
-                if board.curr_player == "O":
-                    score = calculate_score(board)[0]
-                else:
-                    score = calculate_score(board)[1]
-
-                value = max(value, Alpha_Beta(board, board.curr_player, AI_player, AI_score, depth, depth_max, alpha, beta))
+                value = max(value, Alpha_Beta(board, AI_player, depth, depth_max, alpha, beta))
                 alpha = max(value, alpha)
                 if beta <= alpha:
                     break
             else:
                 value = math.inf
-                if board.curr_player == "O":
-                    score = calculate_score(board)[0]
-                else:
-                    score = calculate_score(board)[1]
-                value = min(value, Alpha_Beta(board, board.curr_player, AI_player, AI_score, depth, depth_max, alpha, beta))
+                
+                value = min(value, Alpha_Beta(board, AI_player, depth, depth_max, alpha, beta))
                 beta = min(value, beta)
                 if beta <= alpha:
                     break
-            
-        return value
+    return value
     
-    
-def move_Alpha_Beta ( board:Board, player:str, AI_player:str, AI_score:int, depth_max:int):
+def Best_Move (board:Board, AI_player:str, depth_max:int):
     beta = math.inf
     best_value = -math.inf
     best_node = None
@@ -429,14 +432,16 @@ def move_Alpha_Beta ( board:Board, player:str, AI_player:str, AI_score:int, dept
     moves = board.generate_all_possible_moves(board.curr_player)
 
     boards_list = board.generate_possible_boards(board.curr_player)
-    for board in boards_list:
-        value = Alpha_Beta(board, player, AI_player, AI_score, depth, depth_max, best_value, beta)
+    if boards_list != None:
+        for board in boards_list:
+            value = Alpha_Beta(board, AI_player, depth, depth_max, best_value, beta)
 
-        if value >= best_value:
-            best_value = value
-            best_board = board
-            best_move = moves[boards_list.index(best_board)]
-
+            if value >= best_value:
+                best_value = value
+                best_board = board
+                best_move = moves[boards_list.index(best_board)]
+    else:
+        return (0,0)
     return best_move
 
 
