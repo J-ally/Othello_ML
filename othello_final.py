@@ -420,7 +420,7 @@ def Alpha_Beta(board:Board, AI_player:str, depth:int, depth_max:int, alpha:float
                     break
     return value
     
-def Best_Move (board:Board, AI_player:str, depth_max:int):
+def move_Alpha_Beta (board:Board, AI_player:str, depth_max:int):
     beta = math.inf
     best_value = -math.inf
     best_node = None
@@ -848,8 +848,7 @@ def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, dep
                 elif AI_type == "min_max" :
                     current_move = move_Min_Max (board, depth)
                 elif AI_type == "alpha_beta" :
-                    AI_score = calculate_score(board)[position]
-                    current_move = move_Alpha_Beta (board, board.curr_player, AI_player, AI_score, depth)
+                    current_move = move_Alpha_Beta (board, AI_player, depth)
                 elif AI_type == "mcts" :
                     current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output, save_party=False)
             
