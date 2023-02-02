@@ -870,3 +870,76 @@ def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, dep
     end = time.time()
     final_time_ms = round((end-start) * 10**3)
     return [f"{AI_type} vs {player_type}, depth {depth}, nb rounds {nb_simulations}", AI_player, score, final_time_ms, board.moves_history]
+
+
+###############################################################################
+#                                 PLAYING                                     #
+###############################################################################
+
+def affiche_menu():
+    """
+    Displays the menu of the application
+    """    
+    continuer_appli = True
+    typed_one = False
+    typed_two = False
+    typed_three = False
+    
+    while continuer_appli : 
+        
+        print('************************************************************')
+        print("*                  Let's play OTHELLO                      *")
+        print('************************************************************')
+        print('Go through the following step to generate your game : \n')
+        print("  Players can be the following : random, min_max, alpha_beta, mcts, human \n")
+        print("  1 - Choose the type of the first player ! \n")
+        print("  2 - Choose the type of the second player \n")
+        print("  3 - Choose the depth of the calculations (for alpha beta and min max algorithms only) \n")
+        print("  4 - If the game doesn't start, type 4 ! \n")
+        print("************************************************************\n")
+        
+        print("Press any number above in order to set up your game !")
+        print ("Press 0 to close the application !")
+        
+        choix = int(input(" "))
+        
+        if choix == 0:      # closes the application    
+            continuer_appli = False
+            
+        elif choix == 1:    # sets the type of the first player
+            typed_one = True
+            type_AI = str(input("Enter the type of the first player : "))
+            if type_AI not in ["random", "min_max", "alpha_beta", "mcts", "human"] :
+                print("This type of player does not exist ! Choose 1 again to set up the type of the first player !")
+                typed_one = False
+                continue
+            
+        elif choix == 2:    # sets the type of the second player
+            typed_two = True
+            type_player = str(input("Enter the type of the second player : "))
+            if type_player not in ["random", "min_max", "alpha_beta", "mcts", "human"] :
+                print("This type of player does not exist ! Choose 2 again to set up the type of the second player !")
+                typed_one = False
+                continue
+            
+        elif choix == 3:    # sets the depth of the calculations
+            typed_three = True
+            depth_choosen = int(input("Enter the depth of the calculations (up to 4 for bearable experience): "))
+            
+            if typed_one and typed_two and typed_three : # starts the game
+                print("\n" * 100) 
+                play_FAST_othello(Board(), type_AI, type_player, depth_choosen, nb_simulations = 500, print_output = True)
+                print("\n" * 2) 
+                typed_one = False
+                typed_two = False
+                typed_three = False
+                
+        else :
+            print("Votre choix n'existe pas.\n")
+            
+    return # Fin de la fonction affiche_menu()
+
+
+if __name__ == '__main__' :
+    print("Othello.py is running !")
+    affiche_menu()
