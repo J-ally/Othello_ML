@@ -837,6 +837,8 @@ def play_FAST_othello (board_init : Board, AI_type : str, player_type : str, dep
                     current_move = moves [ randint(0, len(moves)-1) ] 
                 elif player_type == "min_max" :
                     current_move = move_Min_Max (board, depth)
+                elif player_type == "alpha_beta" :
+                    current_move = move_Alpha_Beta (board, AI_player, depth)
                 elif player_type == "mcts" :
                     current_move = move_MCTS (MCTS_Node(board, None), nb_simulations, AI_player, print_output, save_party=False)
                     
@@ -886,7 +888,7 @@ def affiche_menu():
     typed_three = False
     
     while continuer_appli : 
-        
+
         print('************************************************************')
         print("*                  Let's play OTHELLO                      *")
         print('************************************************************')
